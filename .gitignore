@@ -1,0 +1,35 @@
+# Build outputs
+target/
+frontend/dist/
+frontend/build/
+
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.*
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Spring Boot
+*.jar
+*.war
+*.class
+
+# Maven wrapper (keep mvnw itself, ignore wrapper jar)
+.mvn/wrapper/maven-wrapper.jar
