@@ -1,0 +1,37 @@
+# =============================================================================
+# application-dev.yml — Smart Campus Operations Hub
+# IT3030 PAF 2026 | SLIIT
+#
+# Development profile overrides.
+# Activated when: spring.profiles.active=dev (set in application.yml)
+#
+# Purpose: verbose SQL logging and DEBUG-level output to aid local development.
+# DO NOT use this profile in production — it leaks query parameters to logs.
+# =============================================================================
+
+spring:
+  # ── JPA / Hibernate (dev overrides) ────────────────────────────────────────
+  jpa:
+    show-sql: true                      # Print every SQL statement to console
+    properties:
+      hibernate:
+        format_sql: true                # Pretty-print SQL across multiple lines
+                                        # (easier to read than single-line output)
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  level:
+    # Application code — DEBUG reveals service-layer decisions, mapper output, etc.
+    com.smartcampus: DEBUG
+
+    # Spring Security — DEBUG shows filter chain decisions, token validation,
+    # authentication events, and access-denied reasons.
+    org.springframework.security: DEBUG
+
+    # Hibernate SQL parameter binding — shows actual values bound to ? placeholders.
+    # Useful for diagnosing query issues, but noisy; comment out if overwhelming.
+    org.hibernate.orm.jdbc.bind: TRACE
+
+    # Keep framework noise at INFO so the console stays readable.
+    org.springframework: INFO
+    org.springframework.web: INFO

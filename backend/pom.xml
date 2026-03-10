@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    pom.xml — Smart Campus Operations Hub
+    IT3030 PAF 2026 | SLIIT
+    Group   : com.smartcampus
+    Artifact: smart-campus
+    Java    : 17 (Temurin)
+    Spring Boot : 3.2.5
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ================================================================
+         Parent — pulls in Spring Boot dependency management and plugin
+         defaults so we don't have to declare versions for every starter.
+         ================================================================ -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version>
+        <relativePath/> <!-- lookup from Maven Central, not local filesystem -->
+    </parent>
+
+    <!-- ================================================================
+         Project coordinates
+         ================================================================ -->
+    <groupId>com.smartcampus</groupId>
+    <artifactId>smart-campus</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Smart Campus Operations Hub</name>
+    <description>
+        REST API backend for the Smart Campus Operations Hub —
+        IT3030 PAF 2026 assignment, SLIIT.
+        Manages resource bookings, maintenance tickets, and notifications
+        for a university campus environment.
+    </description>
+
+    <!-- ================================================================
+         Global version properties
+         Centralised here so upgrades only require a single-line change.
+         ================================================================ -->
+    <properties>
+        <java.version>17</java.version>
+        <!-- Overrides the Spring Boot BOM version — 1.18.36+ supports Java 23/24/25 -->
+        <lombok.version>1.18.36</lombok.version>
+        <!-- JJWT 0.12.x — newer API with fluent builder pattern -->
+        <jjwt.version>0.12.6</jjwt.version>
+        <!-- MapStruct 1.5.x — annotation-processor-based bean mapper -->
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <!-- Binding plugin keeps Lombok and MapStruct annotation processors
+             working in the correct order during compilation -->
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+        <!-- SpringDoc OpenAPI 2.x — compatible with Spring Boot 3 -->
+        <springdoc.version>2.5.0</springdoc.version>
+        <!-- Flyway PostgreSQL dialect extension, must match flyway-core version -->
+        <flyway.version>10.12.0</flyway.version>
+    </properties>
+
+    <!-- ================================================================
+         Dependencies
+         ================================================================ -->
+    <dependencies>
+
+        <!-- ── Spring Boot Starters ──────────────────────────────────── -->
+
+        <!-- Embedded Tomcat + Jackson + Spring MVC REST support -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Hibernate ORM + Spring Data repositories -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Spring Security (authentication + authorization filters) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Bean validation with Hibernate Validator (@Valid, @NotBlank, …) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- OAuth2 client (Google login via Spring Security OAuth2) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
+        <!-- JavaMail integration (password-reset and notification emails) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Actuator — /actuator/health, /actuator/info, etc. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ── Database ──────────────────────────────────────────────── -->
+
+        <!-- PostgreSQL JDBC driver (runtime only — not needed at compile time) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Flyway core — runs db/migration scripts on startup -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+
+        <!-- Flyway PostgreSQL dialect support (required for Flyway 10+) -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+
+        <!-- ── JWT (JJWT 0.12.x) ─────────────────────────────────────── -->
+
+        <!-- Public API — used in source code (import io.jsonwebtoken.*) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+
+        <!-- Implementation — loaded at runtime via ServiceLoader -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Jackson serialisation for JWT claims (runtime) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ── Code Generation ───────────────────────────────────────── -->
+
+        <!-- Lombok — @Getter @Setter @Builder @Slf4j … (compile-time only) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- MapStruct — generates type-safe DTO ↔ Entity mappers at compile time -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
+
+        <!-- ── API Documentation ─────────────────────────────────────── -->
+
+        <!-- SpringDoc — generates OpenAPI 3 spec + Swagger UI automatically -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- ── Testing ───────────────────────────────────────────────── -->
+
+        <!-- JUnit 5 + Mockito + Spring Test (test scope only) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Spring Security test utilities (@WithMockUser, etc.) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- ================================================================
+         Build — Plugin configuration
+         ================================================================ -->
+    <build>
+        <plugins>
+
+            <!-- ── Maven Compiler Plugin ──────────────────────────────
+                 Configures Java 17, enables annotation processing for
+                 both Lombok and MapStruct.
+                 ORDER MATTERS:
+                   1. lombok-mapstruct-binding — must run first to ensure
+                      Lombok generates the builder/setter code that
+                      MapStruct will then reference.
+                   2. Lombok processor.
+                   3. MapStruct processor.
+                 ─────────────────────────────────────────────────────── -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <!-- version inherited from spring-boot-starter-parent -->
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+
+                        <!-- Step 1: binding glue — must be listed first -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct-binding.version}</version>
+                        </path>
+
+                        <!-- Step 2: Lombok generates @Builder / @Getter / @Setter … -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <!-- version inherited from Spring Boot BOM -->
+                            <version>${lombok.version}</version>
+                        </path>
+
+                        <!-- Step 3: MapStruct reads the Lombok-generated code to
+                                     produce type-safe mapper implementations -->
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+
+                    </annotationProcessorPaths>
+
+                    <!-- Pass MapStruct defaults:
+                         - componentModel=spring  → generated mappers are @Component beans
+                         - unmappedTargetPolicy=ERROR → fail fast on incomplete mappings -->
+                    <compilerArgs>
+                        <arg>-Amapstruct.defaultComponentModel=spring</arg>
+                        <arg>-Amapstruct.unmappedTargetPolicy=ERROR</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <!-- ── Spring Boot Maven Plugin ──────────────────────────
+                 Repackages the JAR into an executable fat-jar and
+                 provides mvn spring-boot:run support.
+                 Lombok is excluded from the final artifact (it is only
+                 needed at compile time, not at runtime).
+                 ─────────────────────────────────────────────────────── -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <!-- Remove Lombok from the fat-jar (compile-only) -->
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

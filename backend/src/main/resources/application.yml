@@ -1,0 +1,127 @@
+# =============================================================================
+# application.yml — Smart Campus Operations Hub
+# IT3030 PAF 2026 | SLIIT
+#
+# Base configuration shared across all Spring profiles.
+# Profile-specific overrides live in application-{profile}.yml.
+# Sensitive values (JWT secret, OAuth credentials) MUST be supplied via
+# environment variables in production — never commit real secrets here.
+# =============================================================================
+
+spring:
+  profiles:
+    active: dev                         # Default active profile; override with SPRING_PROFILES_ACTIVE
+
+  # ── DataSource ─────────────────────────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smartcampus
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: SmartCampusPool
+      maximum-pool-size: 10             # Max concurrent DB connections
+      minimum-idle: 2                   # Keep at least 2 connections warm
+      connection-timeout: 30000         # 30 s — fail fast rather than hang
+      idle-timeout: 600000              # 10 min — reclaim idle connections
+      max-lifetime: 1800000             # 30 min — rotate connections proactively
+
+  # ── JPA / Hibernate ────────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      # validate  → Hibernate checks the schema matches the entities but makes
+      #             NO changes. Flyway owns all DDL; Hibernate must not touch it.
+      ddl-auto: validate
+    show-sql: false                     # Overridden to true in application-dev.yml
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false               # Overridden in dev profile
+        jdbc:
+          time_zone: UTC                # Store all timestamps in UTC
+
+  # ── Flyway ─────────────────────────────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration   # Points to src/main/resources/db/migration/
+    baseline-on-migrate: false          # Schema is created fresh — no baseline needed
+    validate-on-migrate: true           # Fail startup if checksums don't match
+
+  # ── OAuth2 Client (Google) ─────────────────────────────────────────────────
+  # Replace placeholder values with real credentials from Google Cloud Console.
+  # In production, inject via environment variables:
+  #   SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID
+  #   SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "${GOOGLE_CLIENT_ID:your-google-client-id-here}"
+            client-secret: "${GOOGLE_CLIENT_SECRET:your-google-client-secret-here}"
+            scope:
+              - openid
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/api/v1/auth/oauth2/callback/{registrationId}"
+
+  # ── Mail ───────────────────────────────────────────────────────────────────
+  # Configure SMTP credentials via environment variables in production.
+  mail:
+    host: "${MAIL_HOST:smtp.gmail.com}"
+    port: "${MAIL_PORT:587}"
+    username: "${MAIL_USERNAME:your-email@gmail.com}"
+    password: "${MAIL_PASSWORD:your-app-password}"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # ── Multipart (file uploads) ───────────────────────────────────────────────
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB               # Maximum size per uploaded file
+      max-request-size: 30MB            # Maximum total multipart request size
+
+# ── Server ───────────────────────────────────────────────────────────────────
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1               # All API endpoints are prefixed with /api/v1
+
+# ── JWT Configuration ─────────────────────────────────────────────────────────
+# Replace placeholder with a Base64-encoded secret of at least 256 bits.
+# Generate one with: openssl rand -base64 64
+# In production, inject via: JWT_SECRET environment variable.
+app:
+  jwt:
+    secret: "${JWT_SECRET:your-very-long-base64-encoded-secret-key-replace-this-in-production-minimum-256-bits}"
+    access-token-expiration-ms: 900000    # 15 minutes  (15 * 60 * 1000)
+    refresh-token-expiration-ms: 604800000 # 7 days     (7 * 24 * 60 * 60 * 1000)
+
+# ── SpringDoc / Swagger UI ────────────────────────────────────────────────────
+# Swagger UI accessible at: http://localhost:8080/api/swagger-ui.html
+# OpenAPI JSON spec at:     http://localhost:8080/api/v3/api-docs
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html              # Relative to context-path → /api/swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+  api-docs:
+    path: /v3/api-docs                  # Relative to context-path → /api/v3/api-docs
+  show-actuator: false                  # Hide internal actuator endpoints from docs
+
+# ── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics    # Only expose safe endpoints
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized     # Full details only for authenticated admins
