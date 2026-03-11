@@ -64,9 +64,17 @@ public class SecurityConfig {
     };
 
     private static final String[] SWAGGER_PATHS = {
-            "/swagger-ui.html",         // Swagger UI entry point
-            "/swagger-ui/**",           // Swagger UI static assets
-            "/v3/api-docs/**"           // OpenAPI JSON spec endpoint
+        "/swagger-ui.html",         // Swagger UI entry point
+        "/swagger-ui/**",           // Swagger UI static assets
+        "/v3/api-docs/**"           // OpenAPI JSON spec endpoint
+};
+
+// ── Actuator endpoint matchers ────────────────────────────────────────────
+// Health check endpoint is public — needed for Docker, CI, and monitoring.
+// Other actuator endpoints remain protected by JWT.
+    private static final String[] PUBLIC_ACTUATOR_PATHS = {
+        "/actuator/health",         // Health check — public for monitoring tools
+        "/actuator/info"            // App info — safe to expose publicly
     };
 
     // =========================================================================
@@ -117,6 +125,10 @@ public class SecurityConfig {
 
                         // Public: Swagger UI and OpenAPI spec — needed for API documentation access
                         .requestMatchers(SWAGGER_PATHS)
+                        .permitAll()
+
+                        // Public: health and info actuator endpoints — needed for monitoring
+                        .requestMatchers(PUBLIC_ACTUATOR_PATHS)
                         .permitAll()
 
                         // Everything else requires a valid, non-expired JWT
