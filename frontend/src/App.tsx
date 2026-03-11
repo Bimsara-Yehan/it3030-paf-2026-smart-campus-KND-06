@@ -1,35 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+/**
+ * App — application root.
+ *
+ * Wires together:
+ *  - React Query's QueryClientProvider (server-state caching)
+ *  - AuthProvider (JWT auth context)
+ *  - React Router's BrowserRouter + route tree
+ *
+ * Route structure:
+ *  /                   → redirect to /dashboard
+ *  /login              → LoginPage          (public)
+ *  /oauth/callback     → OAuthCallbackPage  (public)
+ *  /forbidden          → ForbiddenPage      (public)
+ *  /dashboard          → DashboardPage      (requires auth)
+ *  /notifications      → NotificationsPage  (requires auth)
+ *  *                   → redirect to /dashboard
+ */
 
-function App() {
-  const [count, setCount] = useState(0)
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { AuthProvider } from '@/context/AuthContext';
+import PrivateRoute from '@/routes/PrivateRoute';
+
+import LoginPage from '@/pages/auth/LoginPage';
+import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
+import DashboardPage from '@/pages/dashboard/DashboardPage';
+import NotificationsPage from '@/pages/notifications/NotificationsPage';
+import ForbiddenPage from '@/pages/errors/ForbiddenPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
+
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* ── Public routes ── */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+            <Route path="/forbidden" element={<ForbiddenPage />} />
 
-export default App
+            {/* Root redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* ── Protected routes ── */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+            </Route>
+
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
