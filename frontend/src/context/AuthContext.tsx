@@ -59,9 +59,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     axiosClient
-      .get<User>('/auth/me')
+      .get<ApiResponse<User>>('/auth/me')
       .then(({ data }) => {
-        setUser(data);
+        // Backend wraps the payload: { success, message, data: User }
+        setUser(data.data);
         setAccessToken(storedToken);
       })
       .catch(() => {
@@ -77,11 +78,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── Actions ──────────────────────────────────────────────────────────────────
 
   const login = async (credentials: LoginRequest): Promise<void> => {
-    const { data } = await axiosClient.post<AuthResponse>('/auth/login', credentials);
-    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-    setAccessToken(data.accessToken);
-    setUser(data.user);
+    // Backend returns ApiResponse<AuthResponse> — unwrap the .data envelope.
+    const { data } = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
+    const auth = data.data;
+    localStorage.setItem(ACCESS_TOKEN_KEY, auth.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken);
+    setAccessToken(auth.accessToken);
+    setUser(auth.user);
   };
 
   const logout = (): void => {
@@ -92,11 +95,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const register = async (registerData: RegisterRequest): Promise<void> => {
-    const { data } = await axiosClient.post<AuthResponse>('/auth/register', registerData);
-    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-    setAccessToken(data.accessToken);
-    setUser(data.user);
+    // Backend returns ApiResponse<AuthResponse> — unwrap the .data envelope.
+    const { data } = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/register', registerData);
+    const auth = data.data;
+    localStorage.setItem(ACCESS_TOKEN_KEY, auth.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken);
+    setAccessToken(auth.accessToken);
+    setUser(auth.user);
   };
 
   return (
