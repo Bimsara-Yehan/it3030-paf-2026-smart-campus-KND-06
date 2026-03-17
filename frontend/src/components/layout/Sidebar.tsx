@@ -1,0 +1,223 @@
+/**
+ * Sidebar — fixed left-side navigation panel.
+ *
+ * Renders:
+ *  - Logo / app title at the top
+ *  - Role-aware navigation links in the middle (active link is highlighted)
+ *  - User profile section (avatar, name, role badge) pinned to the bottom
+ *
+ * Navigation visibility by role:
+ *  ALL       → Dashboard, Notifications
+ *  USER      → My Bookings, My Tickets, Resources
+ *  ADMIN     → All Bookings, All Tickets, Resources, User Management
+ *  TECHNICIAN→ Assigned Tickets, Resources
+ */
+
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types';
+
+// ── Nav item type ─────────────────────────────────────────────────────────────
+
+interface NavItem {
+  label: string;
+  to: string;
+  /** Heroicons-compatible SVG path data for the item icon. */
+  iconPath: string;
+}
+
+// ── Shared nav items (all roles) ──────────────────────────────────────────────
+
+const NAV_COMMON: NavItem[] = [
+  {
+    label: 'Dashboard',
+    to: '/dashboard',
+    iconPath:
+      'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25',
+  },
+  {
+    label: 'Notifications',
+    to: '/notifications',
+    iconPath:
+      'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0',
+  },
+];
+
+// ── Role-specific nav items ───────────────────────────────────────────────────
+
+const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
+  [UserRole.USER]: [
+    {
+      label: 'My Bookings',
+      to: '/bookings',
+      iconPath:
+        'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+    },
+    {
+      label: 'My Tickets',
+      to: '/tickets',
+      iconPath:
+        'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z',
+    },
+    {
+      label: 'Resources',
+      to: '/resources',
+      iconPath:
+        'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z',
+    },
+  ],
+  [UserRole.ADMIN]: [
+    {
+      label: 'All Bookings',
+      to: '/bookings',
+      iconPath:
+        'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+    },
+    {
+      label: 'All Tickets',
+      to: '/tickets',
+      iconPath:
+        'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z',
+    },
+    {
+      label: 'Resources',
+      to: '/resources',
+      iconPath:
+        'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z',
+    },
+    {
+      label: 'User Management',
+      to: '/admin/users',
+      iconPath:
+        'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+    },
+  ],
+  [UserRole.TECHNICIAN]: [
+    {
+      label: 'Assigned Tickets',
+      to: '/tickets',
+      iconPath:
+        'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z',
+    },
+    {
+      label: 'Resources',
+      to: '/resources',
+      iconPath:
+        'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z',
+    },
+  ],
+};
+
+// ── Role badge colours ────────────────────────────────────────────────────────
+
+const ROLE_BADGE: Record<UserRole, { label: string; classes: string }> = {
+  [UserRole.ADMIN]:      { label: 'Administrator', classes: 'bg-red-100 text-red-700' },
+  [UserRole.TECHNICIAN]: { label: 'Technician',    classes: 'bg-blue-100 text-blue-700' },
+  [UserRole.USER]:       { label: 'Student / Staff', classes: 'bg-green-100 text-green-700' },
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function Sidebar() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  if (!user) return null;
+
+  // Build the nav list: shared items + role-specific items.
+  const navItems: NavItem[] = [...NAV_COMMON, ...(NAV_BY_ROLE[user.role] ?? [])];
+
+  // Derive initials for the avatar fallback (up to 2 words).
+  const initials = user.fullName
+    .split(' ')
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase();
+
+  const badge = ROLE_BADGE[user.role];
+
+  return (
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white">
+      {/* ── Logo / title ── */}
+      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-gray-200 px-5">
+        {/* Simple square logo mark */}
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+          <span className="text-sm font-bold text-white">SC</span>
+        </div>
+        <span className="text-sm font-semibold text-gray-900 leading-tight">
+          Smart Campus<br />
+          <span className="text-xs font-normal text-gray-500">Operations Hub</span>
+        </span>
+      </div>
+
+      {/* ── Navigation links ── */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Main navigation">
+        <ul className="space-y-0.5">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <li key={item.to}>
+                <button
+                  onClick={() => navigate(item.to)}
+                  className={[
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                  ].join(' ')}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {/* Icon */}
+                  <svg
+                    className={['h-4.5 w-4.5 shrink-0', isActive ? 'text-blue-600' : 'text-gray-400'].join(' ')}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.75}
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.iconPath} />
+                  </svg>
+                  {item.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* ── User profile section ── */}
+      <div className="shrink-0 border-t border-gray-200 p-4">
+        <div className="flex items-center gap-3">
+          {/* Avatar — profile picture or initials fallback */}
+          {user.profilePicture ? (
+            <img
+              src={user.profilePicture}
+              alt={user.fullName}
+              className="h-9 w-9 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+              {initials}
+            </div>
+          )}
+
+          {/* Name + role badge */}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-gray-900">{user.fullName}</p>
+            <span
+              className={[
+                'mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                badge.classes,
+              ].join(' ')}
+            >
+              {badge.label}
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}

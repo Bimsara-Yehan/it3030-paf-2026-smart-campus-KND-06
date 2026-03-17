@@ -19,6 +19,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // ALL hooks must be called unconditionally before any early returns.
+  // useForm is a hook, so it must live here — not after the guards below.
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginRequest>();
+
   // Wait until the stored token has been validated before deciding where to go.
   // Without this guard, isAuthenticated is briefly false on every page load
   // even for users with a valid stored token, causing a flash of the login form.
@@ -26,12 +34,6 @@ export default function LoginPage() {
 
   // Already logged in — skip the form entirely.
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginRequest>();
 
   const onSubmit = async (data: LoginRequest) => {
     setServerError(null);
