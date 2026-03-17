@@ -19,7 +19,7 @@ import {
   type ReactNode,
 } from 'react';
 import axiosClient, { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/axiosClient';
-import type { User, AuthResponse, LoginRequest, RegisterRequest } from '@/types';
+import type { User, AuthResponse, ApiResponse, LoginRequest, RegisterRequest } from '@/types';
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 
