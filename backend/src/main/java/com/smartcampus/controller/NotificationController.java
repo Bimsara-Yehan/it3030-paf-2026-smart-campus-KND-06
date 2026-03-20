@@ -1,8 +1,8 @@
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.response.ApiResponse;
+import com.smartcampus.dto.response.NotificationPreferenceResponse;
 import com.smartcampus.dto.response.NotificationResponse;
-import com.smartcampus.entity.NotificationPreference;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.NotificationType;
 import com.smartcampus.service.NotificationService;
@@ -176,11 +176,11 @@ public class NotificationController {
      * @return {@code 200 OK} with a list of {@link NotificationPreference} entities
      */
     @GetMapping("/preferences")
-    public ResponseEntity<ApiResponse<List<NotificationPreference>>> getPreferences(
+    public ResponseEntity<ApiResponse<List<NotificationPreferenceResponse>>> getPreferences(
             @AuthenticationPrincipal User currentUser) {
 
         log.debug("GET /notifications/preferences — user: {}", currentUser.getId());
-        List<NotificationPreference> preferences =
+        List<NotificationPreferenceResponse> preferences =
                 notificationService.getPreferences(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Preferences retrieved.", preferences));
     }

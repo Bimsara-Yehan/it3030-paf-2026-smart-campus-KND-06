@@ -40,6 +40,7 @@ import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
+import NotificationPreferencesPage from '@/pages/notifications/NotificationPreferencesPage';
 import BookingsPage from '@/pages/bookings/BookingsPage';
 import TicketsPage from '@/pages/tickets/TicketsPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
@@ -75,6 +76,7 @@ export default function App() {
                 {/* Available to all authenticated roles */}
                 <Route path="/dashboard"     element={<DashboardPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
                 <Route path="/bookings"      element={<BookingsPage />} />
                 <Route path="/tickets"       element={<TicketsPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />

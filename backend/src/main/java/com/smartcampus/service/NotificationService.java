@@ -1,5 +1,6 @@
 package com.smartcampus.service;
 
+import com.smartcampus.dto.response.NotificationPreferenceResponse;
 import com.smartcampus.dto.response.NotificationResponse;
 import com.smartcampus.entity.Notification;
 import com.smartcampus.entity.NotificationPreference;
@@ -212,19 +213,23 @@ public class NotificationService {
     // =========================================================================
 
     /**
-     * Returns all explicitly configured notification preferences for the given user.
+     * Returns all explicitly configured notification preferences for the given user
+     * as safe DTOs (never raw entities, to avoid Hibernate proxy serialization errors).
      *
      * <p>Types not present in the returned list are implicitly enabled
      * (absence of a row = preference is enabled by default). The frontend
      * should render missing types as toggled on.
      *
      * @param userId the UUID of the user
-     * @return a list of {@link NotificationPreference} entities; may be empty
+     * @return a list of {@link NotificationPreferenceResponse} DTOs; may be empty
      *         if the user has not changed any defaults
      */
     @Transactional(readOnly = true)
-    public List<NotificationPreference> getPreferences(UUID userId) {
-        return preferenceRepository.findByUserId(userId);
+    public List<NotificationPreferenceResponse> getPreferences(UUID userId) {
+        return preferenceRepository.findByUserId(userId)
+                .stream()
+                .map(NotificationPreferenceResponse::from)
+                .collect(Collectors.toList());
     }
 
     /**
