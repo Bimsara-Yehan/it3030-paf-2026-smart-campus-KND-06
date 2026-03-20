@@ -1,6 +1,8 @@
 package com.smartcampus.config;
 
 import com.smartcampus.security.JwtFilter;
+import com.smartcampus.security.OAuth2FailureHandler;
+import com.smartcampus.security.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +19,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
@@ -29,7 +33,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *
  * <p>Security model:
  * <ul>
- *   <li>Stateless JWT authentication — no HTTP sessions are created or used.</li>
+ *   <li>Stateless JWT authentication — no HTTP sessions are created for API calls.
+ *       Spring Security 6 does not auto-save the SecurityContext to the session,
+ *       so JWT-authenticated requests remain session-free even though the session
+ *       policy is {@link SessionCreationPolicy#IF_REQUIRED}.</li>
+ *   <li>The session policy is {@code IF_REQUIRED} (not {@code STATELESS}) because
+ *       the OAuth2 authorization code flow needs a short-lived session to carry
+ *       the CSRF {@code state} parameter between the redirect to Google and the
+ *       callback from Google. The session is discarded once the callback completes
+ *       and the JWT tokens are issued.</li>
  *   <li>CSRF disabled — not needed for stateless REST APIs (tokens are the CSRF protection).</li>
  *   <li>{@link JwtFilter} runs before {@link UsernamePasswordAuthenticationFilter}
  *       to populate the {@code SecurityContext} from the Bearer token.</li>
@@ -39,6 +51,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *
  * @author  Smart Campus Team — IT3030 PAF 2026, SLIIT
  * @see     JwtFilter
+ * @see     OAuth2SuccessHandler
+ * @see     OAuth2FailureHandler
  * @see     CorsConfig
  */
 @Slf4j
@@ -48,8 +62,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
-    private final UserDetailsService userDetailsService;
+    private final JwtFilter             jwtFilter;
+    private final UserDetailsService    userDetailsService;
+    private final OAuth2SuccessHandler  oAuth2SuccessHandler;
+    private final OAuth2FailureHandler  oAuth2FailureHandler;
 
     // ── Public endpoint matchers ──────────────────────────────────────────────
     // Paths listed here are fully public — no JWT required.
@@ -60,18 +76,21 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_GET_PATHS = {
-            "/resources"                // browse available resources without logging in
+            "/resources",              // browse available resources without logging in
+            "/auth/oauth2/**",         // OAuth2 initiation endpoint (triggers Google redirect)
+            "/login/oauth2/**",        // Spring Security's OAuth2 authorization-code callback
+            "/oauth2/**"               // Spring Security's OAuth2 authorization redirect
     };
 
     private static final String[] SWAGGER_PATHS = {
         "/swagger-ui.html",         // Swagger UI entry point
         "/swagger-ui/**",           // Swagger UI static assets
         "/v3/api-docs/**"           // OpenAPI JSON spec endpoint
-};
+    };
 
-// ── Actuator endpoint matchers ────────────────────────────────────────────
-// Health check endpoint is public — needed for Docker, CI, and monitoring.
-// Other actuator endpoints remain protected by JWT.
+    // ── Actuator endpoint matchers ────────────────────────────────────────────
+    // Health check endpoint is public — needed for Docker, CI, and monitoring.
+    // Other actuator endpoints remain protected by JWT.
     private static final String[] PUBLIC_ACTUATOR_PATHS = {
         "/actuator/health",         // Health check — public for monitoring tools
         "/actuator/info"            // App info — safe to expose publicly
@@ -90,7 +109,10 @@ public class SecurityConfig {
      *   <li>CORS is delegated to {@link CorsConfig} (the {@code corsConfigurationSource} bean).</li>
      *   <li>Public paths (auth endpoints, Swagger, public resource listing) require no authentication.</li>
      *   <li>All other requests require a valid JWT.</li>
-     *   <li>Session management is set to STATELESS — no {@code JSESSIONID} cookies are created.</li>
+     *   <li>Session management is set to {@code IF_REQUIRED} — sessions are only created during
+     *       the OAuth2 authorization-code dance; JWT API calls do not touch the session.</li>
+     *   <li>OAuth2 login is configured with custom success and failure handlers that redirect
+     *       to the React frontend with JWT tokens after Google authentication.</li>
      *   <li>{@link JwtFilter} is inserted before the default username/password filter
      *       so the security context is populated before Spring Security's own checks run.</li>
      * </ol>
@@ -119,7 +141,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, PUBLIC_POST_PATHS)
                         .permitAll()
 
-                        // Public: browse resources without logging in (read-only)
+                        // Public: browse resources without logging in, OAuth2 flow paths
                         .requestMatchers(org.springframework.http.HttpMethod.GET, PUBLIC_GET_PATHS)
                         .permitAll()
 
@@ -135,10 +157,42 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // Stateless session management — Spring Security will never create
-                // or use an HttpSession to store the SecurityContext.
+                // Session management:
+                // IF_REQUIRED (not STATELESS) because the OAuth2 authorization-code flow
+                // requires a short-lived session to transport the CSRF state parameter between
+                // the redirect to Google (request 1) and the callback from Google (request 2).
+                // Spring Security 6 does NOT auto-save the SecurityContext to the session,
+                // so ordinary JWT-authenticated API requests remain effectively stateless.
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
+                // ── OAuth2 Login ──────────────────────────────────────────────
+                // Wire up Google OAuth2 login with our custom handlers.
+                // successHandler: issues JWT tokens and redirects to the React callback page.
+                // failureHandler: redirects to the React login page with an error flag.
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
+                )
+
+                // ── Exception handling ────────────────────────────────────────
+                // Override the default authentication entry point.
+                //
+                // Root cause of the 302 redirect bug:
+                // When oauth2Login() is present, Spring Security installs
+                // LoginUrlAuthenticationEntryPoint as the default entry point.
+                // That entry point redirects any unauthenticated request to the
+                // OAuth2 authorization URL — which is why GET /auth/me was getting
+                // a 302 to Google instead of a 401.
+                //
+                // Fix: replace the entry point with HttpStatusEntryPoint(UNAUTHORIZED).
+                // This makes ALL unauthenticated API requests return 401 immediately.
+                // The OAuth2 flow is still reachable via the explicit public paths
+                // (/oauth2/authorization/google, /login/oauth2/code/google) that are
+                // already marked .permitAll() above — those never hit this entry point.
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
 
                 // Register the DaoAuthenticationProvider so Spring Security knows

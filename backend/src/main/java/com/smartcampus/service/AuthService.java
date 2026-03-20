@@ -20,6 +20,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -259,7 +260,34 @@ public class AuthService {
             throw new UnauthorizedException("No authenticated user found in the security context.");
         }
 
-        String email = authentication.getName(); // getName() returns the username (email)
+        // Resolve the email address from the authentication principal.
+        //
+        // Two possible authentication types arrive here:
+        //
+        //  1. UsernamePasswordAuthenticationToken (normal JWT path)
+        //     JwtFilter sets this after validating the Bearer token.
+        //     getName() returns the email because that is what JwtService
+        //     stores as the JWT subject claim.
+        //
+        //  2. OAuth2AuthenticationToken (OAuth2 session still active)
+        //     With SessionCreationPolicy.IF_REQUIRED, Spring Security keeps
+        //     the OAuth2 session alive for a short period after the Google
+        //     callback.  getName() on OAuth2AuthenticationToken delegates to
+        //     OAuth2User.getName(), which returns the nameAttributeKey — for
+        //     Google that is "sub" (the numeric account ID, e.g. 116158…),
+        //     NOT the email.  Looking up a user by that numeric ID always
+        //     fails, producing the "User account not found for email: <sub>"
+        //     error seen in logs.  Fix: read the "email" attribute directly.
+        String email;
+        if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
+            email = (String) oauth2Token.getPrincipal().getAttributes().get("email");
+        } else {
+            email = authentication.getName();
+        }
+
+        if (email == null || email.isBlank()) {
+            throw new UnauthorizedException("Could not resolve email from the current authentication principal.");
+        }
 
         User user = userRepository.findByEmailAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User account not found for email: " + email));
