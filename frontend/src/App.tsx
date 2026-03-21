@@ -9,6 +9,7 @@
  * Route structure:
  *  /                     → redirect to /dashboard
  *  /login                → LoginPage              (public)
+ *  /register             → RegisterPage           (public)
  *  /oauth/callback       → OAuthCallbackPage      (public)
  *  /forbidden            → ForbiddenPage          (public)
  *
@@ -35,6 +36,7 @@ import { UserRole } from '@/types';
 import MainLayout from '@/components/layout/MainLayout';
 
 import LoginPage from '@/pages/auth/LoginPage';
+import RegisterPage from '@/pages/auth/RegisterPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
@@ -62,7 +64,8 @@ export default function App() {
         <AuthProvider>
           <Routes>
             {/* ── Public routes (no auth, no layout) ── */}
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/login"     element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 
