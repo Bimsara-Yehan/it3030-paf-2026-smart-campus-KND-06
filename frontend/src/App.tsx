@@ -17,6 +17,7 @@
  *  rendered inside MainLayout (sidebar + topbar):
  *  /dashboard            → DashboardPage
  *  /notifications        → NotificationsPage
+ *  /profile              → ProfilePage
  *  /bookings             → BookingsPage
  *  /tickets              → TicketsPage
  *  /resources            → ResourcesPage
@@ -47,6 +48,7 @@ import BookingsPage from '@/pages/bookings/BookingsPage';
 import TicketsPage from '@/pages/tickets/TicketsPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +82,7 @@ export default function App() {
                 <Route path="/dashboard"     element={<DashboardPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
+                <Route path="/profile"       element={<ProfilePage />} />
                 <Route path="/bookings"      element={<BookingsPage />} />
                 <Route path="/tickets"       element={<TicketsPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />

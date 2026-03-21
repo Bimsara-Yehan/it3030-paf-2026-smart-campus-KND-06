@@ -202,9 +202,14 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* ── User profile section ── */}
-      <div className="shrink-0 border-t border-gray-200 p-4">
-        <div className="flex items-center gap-3">
+      {/* ── User profile section — clicking navigates to /profile ── */}
+      <div className="shrink-0 border-t border-gray-200 p-3">
+        <button
+          type="button"
+          onClick={() => navigate('/profile')}
+          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-gray-100"
+          aria-label="View your profile"
+        >
           {/* Avatar — profile picture or initials fallback */}
           {user.profilePicture ? (
             <img
@@ -219,7 +224,7 @@ export default function Sidebar() {
           )}
 
           {/* Name + role badge */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 text-left">
             <p className="truncate text-sm font-medium text-gray-900">{user.fullName}</p>
             <span
               className={[
@@ -230,7 +235,12 @@ export default function Sidebar() {
               {badge.label}
             </span>
           </div>
-        </div>
+
+          {/* Arrow hint */}
+          <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
       </div>
     </aside>
   );
