@@ -25,7 +25,7 @@ import type { User } from '@/types';
 const ROLE_BADGE: Record<UserRole, { label: string; badge: string; avatar: string }> = {
   [UserRole.ADMIN]:      { label: 'Admin',         badge: 'bg-red-100 text-red-700',    avatar: 'bg-red-500' },
   [UserRole.TECHNICIAN]: { label: 'Technician',    badge: 'bg-blue-100 text-blue-700',  avatar: 'bg-blue-500' },
-  [UserRole.USER]:       { label: 'Student/Staff', badge: 'bg-green-100 text-green-700', avatar: 'bg-green-600' },
+  [UserRole.USER]:       { label: 'User', badge: 'bg-green-100 text-green-700', avatar: 'bg-green-600' },
 };
 
 // Filter tab options
@@ -34,7 +34,7 @@ const TABS: { key: RoleFilter; label: string }[] = [
   { key: 'ALL',               label: 'All' },
   { key: UserRole.ADMIN,      label: 'Admin' },
   { key: UserRole.TECHNICIAN, label: 'Technician' },
-  { key: UserRole.USER,       label: 'Student/Staff' },
+  { key: UserRole.USER,       label: 'User' },
 ];
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 const ROLE_LABELS: Record<string, string> = {
   ADMIN:      'Administrator',
   TECHNICIAN: 'Technician',
-  USER:       'Student / Staff',
+  USER:       'User',
 };
 
 /** Tailwind colour classes for each role badge. */

@@ -129,7 +129,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
 const ROLE_BADGE: Record<UserRole, { label: string; classes: string }> = {
   [UserRole.ADMIN]:      { label: 'Administrator', classes: 'bg-red-100 text-red-700' },
   [UserRole.TECHNICIAN]: { label: 'Technician',    classes: 'bg-blue-100 text-blue-700' },
-  [UserRole.USER]:       { label: 'Student / Staff', classes: 'bg-green-100 text-green-700' },
+  [UserRole.USER]:       { label: 'User', classes: 'bg-green-100 text-green-700' },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
