@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author  Smart Campus Team — IT3030 PAF 2026, SLIIT
  */
+@SuppressWarnings("null")
 @DisplayName("JwtService unit tests")
 class JwtServiceTest {
 

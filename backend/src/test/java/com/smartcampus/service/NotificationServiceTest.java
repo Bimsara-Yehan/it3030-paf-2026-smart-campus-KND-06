@@ -42,6 +42,7 @@ import static org.mockito.Mockito.*;
  *
  * @author  Smart Campus Team — IT3030 PAF 2026, SLIIT
  */
+@SuppressWarnings("null")
 @ExtendWith(MockitoExtension.class)
 @DisplayName("NotificationService unit tests")
 class NotificationServiceTest {
