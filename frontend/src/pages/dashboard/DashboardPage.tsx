@@ -9,8 +9,21 @@
  *  - USER / TECH → welcome card + module quick-links only
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import axiosClient from '@/api/axiosClient';
 import { UserRole } from '@/types';
@@ -84,6 +97,56 @@ export default function DashboardPage() {
   const recentUsers = [...users]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
+
+  // ── Chart data ────────────────────────────────────────────────────────────
+
+  /**
+   * Registration trend for the last 7 calendar days (today included).
+   * Each entry has a short date label for the X-axis and a count for the Y-axis.
+   * Days with zero registrations are included so the x-axis is always 7 points wide.
+   */
+  const registrationTrend = useMemo(() => {
+    // Build an ordered array of the last 7 YYYY-MM-DD strings (oldest → today).
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d.toISOString().slice(0, 10);
+    });
+
+    // Count how many users registered on each of those days.
+    const countByDay: Record<string, number> = {};
+    users.forEach((u) => {
+      const day = u.createdAt.slice(0, 10);
+      if (Object.prototype.hasOwnProperty.call(countByDay, day) || days.includes(day)) {
+        countByDay[day] = (countByDay[day] ?? 0) + 1;
+      }
+    });
+
+    return days.map((day) => ({
+      date:  day,
+      // Short human label for the axis tick — "Mar 21"
+      label: new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+        month: 'short',
+        day:   'numeric',
+      }),
+      count: countByDay[day] ?? 0,
+    }));
+  }, [users]);
+
+  /**
+   * Role distribution data for the pie chart.
+   * Zero-count segments are omitted so the pie renders cleanly when
+   * some roles have no members yet.
+   */
+  const roleDist = useMemo(
+    () =>
+      [
+        { name: 'Admin',      value: adminCount,       color: '#EF4444' },
+        { name: 'Technician', value: technicianCount,  color: '#8B5CF6' },
+        { name: 'User',       value: regularUserCount, color: '#22C55E' },
+      ].filter((entry) => entry.value > 0),
+    [adminCount, technicianCount, regularUserCount],
+  );
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
@@ -165,6 +228,14 @@ export default function DashboardPage() {
               }
             />
           </div>
+
+          {/* ── Analytics Overview ── */}
+          {!loading && !error && users.length > 0 && (
+            <AnalyticsOverview
+              registrationTrend={registrationTrend}
+              roleDist={roleDist}
+            />
+          )}
 
           {/* ── Recently Registered Users table ── */}
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
@@ -255,6 +326,145 @@ export default function DashboardPage() {
         </div>
       </div>
 
+    </div>
+  );
+}
+
+// ── AnalyticsOverview sub-component ──────────────────────────────────────────
+
+interface TrendPoint { date: string; label: string; count: number; }
+interface RoleSlice  { name: string; value: number; color: string; }
+
+interface AnalyticsOverviewProps {
+  registrationTrend: TrendPoint[];
+  roleDist:          RoleSlice[];
+}
+
+/**
+ * Custom tooltip for the registration line chart.
+ * Recharts passes `active`, `payload`, and `label` as props.
+ */
+function TrendTooltip({ active, payload, label }: {
+  active?:  boolean;
+  payload?: Array<{ value: number }>;
+  label?:   string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold text-gray-700">{label}</p>
+      <p className="mt-0.5 text-blue-600">
+        {payload[0].value} new {payload[0].value === 1 ? 'user' : 'users'}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Custom tooltip for the role distribution pie chart.
+ * Shows the segment name, raw count, and percentage of the total.
+ */
+function PieTooltip({ active, payload }: {
+  active?:  boolean;
+  payload?: Array<{ name: string; value: number; payload: RoleSlice & { percent?: number } }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const entry   = payload[0];
+  const percent = entry.payload.percent != null
+    ? `${(entry.payload.percent * 100).toFixed(1)}%`
+    : '';
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold text-gray-700">{entry.name}</p>
+      <p className="mt-0.5 text-gray-500">
+        {entry.value} {entry.value === 1 ? 'user' : 'users'} {percent && `· ${percent}`}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Analytics section shown to admins between the stat cards and the recent-users
+ * table.  Contains two side-by-side charts:
+ *  - Left:  line chart — daily registrations over the last 7 days
+ *  - Right: pie chart  — role distribution
+ */
+function AnalyticsOverview({ registrationTrend, roleDist }: AnalyticsOverviewProps) {
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      {/* Section header */}
+      <div className="border-b border-gray-100 px-6 py-4">
+        <h3 className="text-sm font-semibold text-gray-900">Analytics Overview</h3>
+        <p className="mt-0.5 text-xs text-gray-500">Registration trend and role breakdown</p>
+      </div>
+
+      {/* Two-column chart grid — stacks on mobile */}
+      <div className="grid grid-cols-1 gap-0 divide-y divide-gray-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+
+        {/* ── Left: Registration trend line chart ── */}
+        <div className="px-6 py-5">
+          <p className="mb-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+            User Registrations — Last 7 Days
+          </p>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={registrationTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<TrendTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="#3B82F6"
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: '#3B82F6', strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: '#2563EB', strokeWidth: 0 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* ── Right: Role distribution pie chart ── */}
+        <div className="px-6 py-5">
+          <p className="mb-4 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+            Users by Role
+          </p>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={roleDist}
+                cx="50%"
+                cy="45%"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={3}
+                dataKey="value"
+              >
+                {roleDist.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<PieTooltip />} />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+      </div>
     </div>
   );
 }
