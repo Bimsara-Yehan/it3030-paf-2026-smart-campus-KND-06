@@ -15,13 +15,22 @@
  * Uses a pure flex layout (no fixed positioning) so the sidebar
  * and content column are always the same height as the viewport.
  * Page content scrolls inside its own flex child, not the window.
+ *
+ * Also mounts the session-timeout warning system:
+ *  - useSessionTimeout polls the JWT expiry every 30 seconds.
+ *  - SessionTimeoutWarning renders a floating card when ≤ 2 minutes remain.
  */
 
 import { Outlet } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
+import SessionTimeoutWarning from '@/components/SessionTimeoutWarning';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 
 export default function MainLayout() {
+  // Monitor the JWT expiry and surface warning state for the floating card.
+  const { showWarning, secondsRemaining, extendSession } = useSessionTimeout();
+
   return (
     // Full-viewport flex container — prevents the whole page from scrolling.
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -38,6 +47,13 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* ── Session timeout warning — fixed bottom-right, rendered above everything ── */}
+      <SessionTimeoutWarning
+        showWarning={showWarning}
+        secondsRemaining={secondsRemaining}
+        extendSession={extendSession}
+      />
     </div>
   );
 }
