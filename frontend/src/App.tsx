@@ -46,6 +46,7 @@ import NotificationsPage from '@/pages/notifications/NotificationsPage';
 import NotificationPreferencesPage from '@/pages/notifications/NotificationPreferencesPage';
 import BookingsPage from '@/pages/bookings/BookingsPage';
 import TicketsPage from '@/pages/tickets/TicketsPage';
+import TicketDetailPage from '@/pages/tickets/TicketDetailPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
@@ -87,6 +88,7 @@ export default function App() {
                 <Route path="/login-history" element={<LoginHistoryPage />} />
                 <Route path="/bookings"      element={<BookingsPage />} />
                 <Route path="/tickets"       element={<TicketsPage />} />
+                <Route path="/tickets/:id"   element={<TicketDetailPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />
 
                 {/* Admin-only routes — RoleRoute enforces the ADMIN role */}
