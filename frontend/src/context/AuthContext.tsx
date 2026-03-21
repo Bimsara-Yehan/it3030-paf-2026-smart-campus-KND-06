@@ -19,7 +19,7 @@ import {
   type ReactNode,
 } from 'react';
 import axiosClient, { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/axiosClient';
-import type { User, AuthResponse, LoginRequest, RegisterRequest } from '@/types';
+import type { User, AuthResponse, ApiResponse, LoginRequest, RegisterRequest } from '@/types';
 
 // ── Context shape ─────────────────────────────────────────────────────────────
 
@@ -31,6 +31,12 @@ interface AuthContextValue {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
   register: (data: RegisterRequest) => Promise<void>;
+  /**
+   * Hydrates auth state directly from tokens + a pre-fetched user object.
+   * Used by OAuthCallbackPage after the Google OAuth2 flow completes —
+   * avoids a full page reload by writing state into the running AuthContext.
+   */
+  loginWithTokens: (accessToken: string, refreshToken: string, user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -59,9 +65,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     axiosClient
-      .get<User>('/auth/me')
+      .get<ApiResponse<User>>('/auth/me')
       .then(({ data }) => {
-        setUser(data);
+        // Backend wraps the payload: { success, message, data: User }
+        setUser(data.data);
         setAccessToken(storedToken);
       })
       .catch(() => {
@@ -77,11 +84,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── Actions ──────────────────────────────────────────────────────────────────
 
   const login = async (credentials: LoginRequest): Promise<void> => {
-    const { data } = await axiosClient.post<AuthResponse>('/auth/login', credentials);
-    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-    setAccessToken(data.accessToken);
-    setUser(data.user);
+    // Backend returns ApiResponse<AuthResponse> — unwrap the .data envelope.
+    const { data } = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
+    const auth = data.data;
+    localStorage.setItem(ACCESS_TOKEN_KEY, auth.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken);
+    setAccessToken(auth.accessToken);
+    setUser(auth.user);
+  };
+
+  const loginWithTokens = (newAccessToken: string, newRefreshToken: string, newUser: User): void => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+    setAccessToken(newAccessToken);
+    setUser(newUser);
   };
 
   const logout = (): void => {
@@ -92,11 +108,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const register = async (registerData: RegisterRequest): Promise<void> => {
-    const { data } = await axiosClient.post<AuthResponse>('/auth/register', registerData);
-    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-    setAccessToken(data.accessToken);
-    setUser(data.user);
+    // Backend returns ApiResponse<AuthResponse> — unwrap the .data envelope.
+    const { data } = await axiosClient.post<ApiResponse<AuthResponse>>('/auth/register', registerData);
+    const auth = data.data;
+    localStorage.setItem(ACCESS_TOKEN_KEY, auth.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken);
+    setAccessToken(auth.accessToken);
+    setUser(auth.user);
   };
 
   return (
@@ -109,6 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         logout,
         register,
+        loginWithTokens,
       }}
     >
       {children}

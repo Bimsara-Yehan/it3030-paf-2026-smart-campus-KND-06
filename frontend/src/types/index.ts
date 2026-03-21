@@ -7,11 +7,13 @@
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-  TECHNICIAN = 'TECHNICIAN',
-}
+export const UserRole = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+  TECHNICIAN: 'TECHNICIAN',
+} as const;
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 // ── Domain models ────────────────────────────────────────────────────────────
 
@@ -25,22 +27,34 @@ export interface User {
   createdAt: string; // ISO-8601 date string
 }
 
+/** All notification type values produced by the backend. */
+export type NotificationType =
+  | 'BOOKING_APPROVED'
+  | 'BOOKING_REJECTED'
+  | 'BOOKING_CANCELLED'
+  | 'TICKET_ASSIGNED'
+  | 'TICKET_STATUS_CHANGED'
+  | 'NEW_COMMENT'
+  | 'SYSTEM_ANNOUNCEMENT';
+
 export interface Notification {
   id: string;
   userId: string;
-  title: string;
+  /** Optional title — fall back to `message` when absent. */
+  title?: string;
   message: string;
-  type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS';
+  type: NotificationType;
   isRead: boolean;
-  createdAt: string;
+  relatedEntityType: 'BOOKING' | 'TICKET' | null;
+  relatedEntityId: string | null;
+  createdAt: string; // ISO-8601
 }
 
 export interface NotificationPreference {
   id: string;
   userId: string;
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  notificationTypes: string[];
+  notificationType: string;
+  enabled: boolean;
 }
 
 // ── Auth request / response shapes ──────────────────────────────────────────
