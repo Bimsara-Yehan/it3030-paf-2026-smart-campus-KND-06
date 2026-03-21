@@ -40,8 +40,72 @@ const TABS: { key: RoleFilter; label: string }[] = [
 // ── Toast ─────────────────────────────────────────────────────────────────────
 
 interface ToastItem {
-  id: number;
+  id:      number;
   message: string;
+  /** Controls the colour scheme. Defaults to 'error' (red). */
+  type:    'error' | 'info';
+}
+
+// ── CSV export ────────────────────────────────────────────────────────────────
+
+/** Human-readable role labels written into the CSV file. */
+const CSV_ROLE_LABEL: Record<UserRole, string> = {
+  [UserRole.ADMIN]:      'Admin',
+  [UserRole.TECHNICIAN]: 'Technician',
+  [UserRole.USER]:       'User',
+};
+
+/**
+ * Escapes a single CSV cell value.
+ * Wraps in double-quotes and escapes any embedded double-quotes by doubling them.
+ * This handles values that contain commas, quotes, or newlines safely.
+ */
+function csvCell(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Converts the users array to a RFC 4180-compliant CSV string and triggers
+ * a browser file-download without any server round-trip.
+ *
+ * Steps:
+ *  1. Build header + data rows as a 2-D string array.
+ *  2. Join each row with commas and join rows with CRLF (RFC 4180 line endings).
+ *  3. Wrap in a Blob → create an object URL → click a temporary <a> element.
+ *  4. Revoke the object URL immediately after the click to free memory.
+ *
+ * @param users    The full (unfiltered) user list to export.
+ * @param filename Desired file name including .csv extension.
+ */
+function downloadCsv(users: User[], filename: string): void {
+  const HEADER = ['ID', 'Full Name', 'Email', 'Role', 'Status', 'Joined Date'];
+
+  const rows = users.map((u) => [
+    u.id,
+    u.fullName,
+    u.email,
+    CSV_ROLE_LABEL[u.role] ?? u.role,
+    u.isActive ? 'Active' : 'Inactive',
+    // createdAt is an ISO-8601 string; slice the first 10 chars = YYYY-MM-DD
+    u.createdAt.slice(0, 10),
+  ]);
+
+  const csv = [HEADER, ...rows]
+    .map((row) => row.map(csvCell).join(','))
+    .join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+
+  const anchor = document.createElement('a');
+  anchor.href     = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+
+  // Release the object URL so the browser can free the Blob memory.
+  URL.revokeObjectURL(url);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -189,12 +253,24 @@ export default function UserManagementPage() {
 
   // ── Toast helpers ─────────────────────────────────────────────────────────
 
-  const showToast = useCallback((message: string) => {
+  const showToast = useCallback((message: string, type: ToastItem['type'] = 'error') => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message }]);
+    setToasts((prev) => [...prev, { id, message, type }]);
     // Auto-dismiss after 4 s
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   }, []);
+
+  // ── CSV export handler ─────────────────────────────────────────────────────
+
+  const handleExportCsv = useCallback(() => {
+    if (users.length === 0) {
+      showToast('No users to export.', 'info');
+      return;
+    }
+    const today    = new Date().toISOString().slice(0, 10);
+    const filename = `smartcampus-users-${today}.csv`;
+    downloadCsv(users, filename);
+  }, [users, showToast]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -251,12 +327,24 @@ export default function UserManagementPage() {
           {toasts.map((t) => (
             <div
               key={t.id}
-              className="flex items-center gap-3 rounded-xl border border-red-200 bg-white px-4 py-3 shadow-lg"
+              className={[
+                'flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg',
+                t.type === 'info' ? 'border-blue-200' : 'border-red-200',
+              ].join(' ')}
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100">
-                <svg className="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0zm-9 3.75h.008v.008H12v-.008z" />
-                </svg>
+              <span className={[
+                'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
+                t.type === 'info' ? 'bg-blue-100' : 'bg-red-100',
+              ].join(' ')}>
+                {t.type === 'info' ? (
+                  <svg className="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                  </svg>
+                ) : (
+                  <svg className="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                )}
               </span>
               <p className="text-sm text-gray-700">{t.message}</p>
             </div>
@@ -274,6 +362,19 @@ export default function UserManagementPage() {
             </p>
           )}
         </div>
+
+        {/* Export CSV button — exports all users regardless of current filter */}
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={isLoading}
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Export CSV
+        </button>
       </div>
 
       {/* ── Role filter tabs ── */}
