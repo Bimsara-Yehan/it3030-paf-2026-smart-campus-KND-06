@@ -49,6 +49,7 @@ import TicketsPage from '@/pages/tickets/TicketsPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
+import LoginHistoryPage from '@/pages/profile/LoginHistoryPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +84,7 @@ export default function App() {
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
                 <Route path="/profile"       element={<ProfilePage />} />
+                <Route path="/login-history" element={<LoginHistoryPage />} />
                 <Route path="/bookings"      element={<BookingsPage />} />
                 <Route path="/tickets"       element={<TicketsPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />

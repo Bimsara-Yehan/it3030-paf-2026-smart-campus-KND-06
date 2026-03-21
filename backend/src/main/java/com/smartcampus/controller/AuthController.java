@@ -4,6 +4,7 @@ import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.AuthResponse;
+import com.smartcampus.dto.response.LoginHistoryResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -92,10 +94,11 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
 
         log.info("POST /auth/login — email: {}", request.getEmail());
-        AuthResponse authResponse = authService.login(request);
+        AuthResponse authResponse = authService.login(request, httpRequest);
         return ResponseEntity.ok(ApiResponse.success("Login successful.", authResponse));
     }
 
@@ -206,5 +209,25 @@ public class AuthController {
         log.debug("GET /auth/me");
         UserResponse user = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success("User profile retrieved.", user));
+    }
+
+    // =========================================================================
+    // GET /auth/login-history
+    // =========================================================================
+
+    /**
+     * Returns the 10 most recent login attempts for the currently authenticated user.
+     *
+     * <p>Requires a valid Bearer access token. Entries include both successful and
+     * failed attempts, along with the IP address, browser, device, and timestamp
+     * of each attempt — allowing users to identify suspicious activity.
+     *
+     * @return {@code 200 OK} with a list of up to 10 {@link LoginHistoryResponse} DTOs
+     */
+    @GetMapping("/login-history")
+    public ResponseEntity<ApiResponse<List<LoginHistoryResponse>>> loginHistory() {
+        log.debug("GET /auth/login-history");
+        List<LoginHistoryResponse> history = authService.getLoginHistory();
+        return ResponseEntity.ok(ApiResponse.success("Login history retrieved.", history));
     }
 }

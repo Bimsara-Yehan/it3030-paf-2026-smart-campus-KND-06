@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -64,6 +65,8 @@ class AuthServiceTest {
     @Mock private PasswordEncoder        passwordEncoder;
     @Mock private JwtService             jwtService;
     @Mock private AuthenticationManager  authenticationManager;
+    @Mock private LoginHistoryService    loginHistoryService;
+    @Mock private HttpServletRequest     httpRequest;
 
     // ── Subject under test ────────────────────────────────────────────────────
 
@@ -81,6 +84,11 @@ class AuthServiceTest {
     void setUp() {
         // Inject the @Value field that @InjectMocks cannot populate (no Spring context).
         ReflectionTestUtils.setField(authService, "refreshTokenExpirationMs", 604_800_000L);
+
+        // Stub HttpServletRequest so login() can extract IP and User-Agent.
+        when(httpRequest.getHeader("X-Forwarded-For")).thenReturn(null);
+        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(httpRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0 Test Browser");
 
         // Reusable saved user entity — simulates what the DB returns after INSERT.
         savedUser = User.builder()
@@ -174,7 +182,7 @@ class AuthServiceTest {
         when(jwtService.generateRefreshToken(savedUser)).thenReturn("mock-refresh-token");
 
         // ── Act ─────────────────────────────────────────────────────────────
-        AuthResponse response = authService.login(request);
+        AuthResponse response = authService.login(request, httpRequest);
 
         // ── Assert ──────────────────────────────────────────────────────────
         assertNotNull(response);
@@ -198,7 +206,7 @@ class AuthServiceTest {
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
         // ── Act + Assert ─────────────────────────────────────────────────────
-        assertThrows(BadCredentialsException.class, () -> authService.login(request),
+        assertThrows(BadCredentialsException.class, () -> authService.login(request, httpRequest),
                 "Invalid credentials should surface as BadCredentialsException");
 
         // Verify we never attempted a DB user lookup after authentication failed.
