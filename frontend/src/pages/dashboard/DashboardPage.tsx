@@ -26,7 +26,7 @@ import {
 } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import axiosClient from '@/api/axiosClient';
-import { UserRole } from '@/types';
+import { useTickets } from '@/hooks/useTickets';
 import type { User } from '@/types';
 
 // ── Role display helpers ───────────────────────────────────────────────────────
@@ -57,7 +57,12 @@ const ROLE_AVATAR_BG: Record<string, string> = {
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate  = useNavigate();
-  const isAdmin   = user?.role === UserRole.ADMIN;
+  const isAdmin   = user?.role === 'ADMIN';
+
+  // ── Ticket state (Member C Integration) ────────────────────────────────────
+  const { data: tickets, isLoading: ticketsLoading } = useTickets();
+  const openTicketsCount = tickets?.filter(t => t.status === 'OPEN').length || 0;
+  const inProgressCount = tickets?.filter(t => t.status === 'IN_PROGRESS').length || 0;
 
   // ── Admin: user list state ─────────────────────────────────────────────────
   const [users,   setUsers]   = useState<User[]>([]);
@@ -89,9 +94,9 @@ export default function DashboardPage() {
 
   // ── Derived counts (cheap — runs only when users array changes) ────────────
   const totalUsers       = users.length;
-  const adminCount       = users.filter((u) => u.role === UserRole.ADMIN).length;
-  const technicianCount  = users.filter((u) => u.role === UserRole.TECHNICIAN).length;
-  const regularUserCount = users.filter((u) => u.role === UserRole.USER).length;
+  const adminCount       = users.filter((u) => u.role === 'ADMIN').length;
+  const technicianCount  = users.filter((u) => u.role === 'TECHNICIAN').length;
+  const regularUserCount = users.filter((u) => u.role === 'USER').length;
 
   // Last 5 registered — sort descending by createdAt then slice
   const recentUsers = [...users]
@@ -149,7 +154,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-10 animate-in fade-in duration-1000">
 
       {/* ═══════════════════════════════════════════════════════════════════
           ADMIN-ONLY: Statistics + Recent Users
@@ -227,6 +232,43 @@ export default function DashboardPage() {
                 </svg>
               }
             />
+
+            {/* Member C: Live Incident Summary Card */}
+            <div className="col-span-2 sm:col-span-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-md text-white">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-100">Incident Ticketing Summary</p>
+                  <h3 className="mt-2 text-2xl font-bold">Active Campus Issues</h3>
+                </div>
+                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-6 flex items-center gap-8">
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold">{ticketsLoading ? '...' : openTicketsCount}</span>
+                  <span className="text-xs font-medium text-blue-100 flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-red-400"></span> Open
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-3xl font-bold">{ticketsLoading ? '...' : inProgressCount}</span>
+                  <span className="text-xs font-medium text-blue-100 flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-yellow-400"></span> In Progress
+                  </span>
+                </div>
+                <div className="ml-auto">
+                   <button 
+                    onClick={() => navigate('/tickets')}
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors backdrop-blur-sm"
+                   >
+                     Manage Tickets →
+                   </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* ── Analytics Overview ── */}
@@ -275,7 +317,7 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           ALL ROLES: Welcome card + module quick-links
       ═══════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
+      <div className="glass rounded-3xl bg-white/40 p-8 shadow-sm ring-1 ring-white/50 border border-white/20 animate-in slide-in-from-bottom duration-700">
         <p className="text-sm font-medium text-blue-600">Welcome back</p>
 
         <h2 className="mt-1 text-3xl font-bold text-gray-900">
@@ -484,7 +526,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, loading, colorRing, iconBg, iconText, countText, icon }: StatCardProps) {
   return (
-    <div className={['rounded-2xl bg-white p-5 shadow-sm ring-1', colorRing].join(' ')}>
+    <div className={['rounded-2xl bg-white p-5 shadow-sm ring-1 transition-all hover:shadow-md', colorRing, loading ? 'shimmer' : ''].join(' ')}>
       {/* Icon */}
       <div className={['inline-flex h-10 w-10 items-center justify-center rounded-xl', iconBg, iconText].join(' ')}>
         {icon}
@@ -492,7 +534,7 @@ function StatCard({ label, value, loading, colorRing, iconBg, iconText, countTex
 
       {/* Count */}
       {loading ? (
-        <div className="mt-4 h-8 w-16 animate-pulse rounded-lg bg-gray-200" />
+        <div className="mt-4 h-8 w-16 opacity-0" />
       ) : (
         <p className={['mt-4 text-3xl font-bold', countText].join(' ')}>{value}</p>
       )}

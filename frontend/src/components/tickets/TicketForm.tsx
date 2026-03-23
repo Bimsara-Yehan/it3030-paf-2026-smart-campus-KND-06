@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketApi } from '../../api/tickets';
 import { ticketKeys } from '../../hooks/useTickets';
-import { TicketCategory, TicketPriority } from '../../types/ticket';
-import type { CreateTicketRequest } from '../../types/ticket';
+import { useToastStore } from '../../store/useToastStore';
+import type { CreateTicketRequest, TicketCategory, TicketPriority } from '../../types/ticket';
 
 interface TicketFormProps {
   onSuccess?: () => void;
@@ -13,6 +13,7 @@ interface TicketFormProps {
 
 export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
@@ -22,8 +23,8 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
     reset,
   } = useForm<CreateTicketRequest>({
     defaultValues: {
-      category: TicketCategory.IT_SUPPORT,
-      priority: TicketPriority.LOW,
+      category: 'IT_SUPPORT' as TicketCategory,
+      priority: 'LOW' as TicketPriority,
       title: '',
       description: '',
       preferredContact: '',
@@ -35,11 +36,14 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
     onSuccess: () => {
       // Invalidate the tickets lists so the new ticket immediately appears in the UI
       queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
+      addToast('Ticket created successfully!', 'success');
       reset();
       onSuccess?.();
     },
     onError: (error: any) => {
-      setApiError(error.response?.data?.message || 'Failed to create ticket. Please try again.');
+      const msg = error.response?.data?.message || 'Failed to create ticket.';
+      setApiError(msg);
+      addToast(msg, 'error');
     },
   });
 
@@ -49,7 +53,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full max-w-2xl mx-auto">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden w-full max-w-2xl mx-auto animate-in slide-in-from-bottom duration-500">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-800">Create New Ticket</h3>
         {onCancel && (
@@ -87,7 +91,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
               {...register('category', { required: 'Category is required' })}
               className="w-full px-4 py-2 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
             >
-              {Object.values(TicketCategory).map((cat) => (
+              {['IT_SUPPORT', 'MAINTENANCE', 'CLEANING', 'SECURITY', 'OTHER'].map((cat) => (
                 <option key={cat} value={cat}>
                   {cat.replace('_', ' ')}
                 </option>
@@ -100,7 +104,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
               {...register('priority', { required: 'Priority is required' })}
               className="w-full px-4 py-2 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
             >
-              {Object.values(TicketPriority).map((pri) => (
+              {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((pri) => (
                 <option key={pri} value={pri}>
                   {pri}
                 </option>
@@ -121,24 +125,14 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
           {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>}
         </div>
 
-        {/* Asset Tag & Contact */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Asset/Resource ID (Optional)</label>
-            <input
-              {...register('resourceId')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-              placeholder="E.g., PROJ-301"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact (Optional)</label>
-            <input
-              {...register('preferredContact')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-              placeholder="Phone number or alternative email"
-            />
-          </div>
+        {/* Preferred Contact */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact (Optional)</label>
+          <input
+            {...register('preferredContact')}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+            placeholder="Phone number or alternative email"
+          />
         </div>
 
         {/* Submit Actions */}

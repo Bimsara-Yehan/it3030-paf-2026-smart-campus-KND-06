@@ -1,16 +1,43 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTicket, useTicketAttachments } from '../../hooks/useTickets';
-import { TicketStatus } from '../../types/ticket';
-import CommentSection from '../../components/tickets/CommentSection';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
+import CommentSection from '../../components/tickets/CommentSection';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ticketApi } from '../../api/tickets';
+import { ticketKeys } from '../../hooks/useTickets';
+import { useToastStore } from '../../store/useToastStore';
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const addToast = useToastStore((state) => state.addToast);
 
   const { data: ticket, isLoading, error } = useTicket(id!);
   const { data: attachments, isLoading: loadingAttachments } = useTicketAttachments(id!);
+  const queryClient = useQueryClient();
+
+  const statusMutation = useMutation({
+    mutationFn: ({ status, resolutionNotes }: { status: string; resolutionNotes?: string }) => 
+      ticketApi.updateTicketStatus(id!, { status: status as any, resolutionNotes }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ticketKeys.detail(id!) });
+      queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
+      addToast(`Status updated to ${variables.status.replace('_', ' ')}`, 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to update status', 'error');
+    }
+  });
+
+  const handleUpdateStatus = (status: string) => {
+    let notes = undefined;
+    if (status === 'RESOLVED') {
+      const input = prompt('Enter resolution notes:');
+      if (input === null) return;
+      notes = input;
+    }
+    statusMutation.mutate({ status, resolutionNotes: notes });
+  };
 
   if (isLoading) {
     return (
@@ -30,7 +57,9 @@ export default function TicketDetailPage() {
     );
   }
 
-  const isTechOrAdmin = user?.role === UserRole.TECHNICIAN || user?.role === UserRole.ADMIN;
+  const isAdmin = user?.role === 'ADMIN';
+  const isTechOrAdmin = user?.role === 'TECHNICIAN' || isAdmin;
+  const isReporter = user?.id === ticket.reporter?.id;
 
   return (
     <div className="p-8 max-w-7xl mx-auto h-full flex flex-col space-y-6">
@@ -54,13 +83,35 @@ export default function TicketDetailPage() {
           </div>
           
           {/* Action Area */}
-          {isTechOrAdmin && ticket.status !== TicketStatus.CLOSED && (
-            <div className="flex gap-3">
-              <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 text-sm font-medium transition-colors">
-                Update Status
+          <div className="flex gap-3">
+            {isTechOrAdmin && ticket.status === 'OPEN' && (
+              <button 
+                onClick={() => handleUpdateStatus('IN_PROGRESS')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 text-sm font-medium transition-colors"
+                disabled={statusMutation.isPending}
+              >
+                Accept Ticket
               </button>
-            </div>
-          )}
+            )}
+            {isTechOrAdmin && ticket.status === 'IN_PROGRESS' && (
+              <button 
+                onClick={() => handleUpdateStatus('RESOLVED')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 text-sm font-medium transition-colors"
+                disabled={statusMutation.isPending}
+              >
+                Resolve Ticket
+              </button>
+            )}
+            {(isAdmin || isReporter) && ticket.status === 'RESOLVED' && (
+              <button 
+                onClick={() => handleUpdateStatus('CLOSED')}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg shadow-sm hover:bg-black text-sm font-medium transition-colors"
+                disabled={statusMutation.isPending}
+              >
+                Close Ticket
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -78,6 +129,48 @@ export default function TicketDetailPage() {
           </div>
 
           {/* Comments Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+               <h3 className="text-lg font-semibold text-gray-800">Activity History</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-6">
+                <TimelineItem 
+                  title="Ticket Reported" 
+                  date={ticket.createdAt} 
+                  description={`Reported by ${ticket.reporter?.fullName}`}
+                  completed={true}
+                />
+                {ticket.assignedAt && (
+                  <TimelineItem 
+                    title="Ticket Assigned" 
+                    date={ticket.assignedAt} 
+                    description={`Assigned to ${ticket.assignedTechnician?.fullName}`}
+                    completed={true}
+                  />
+                )}
+                {ticket.resolvedAt && (
+                  <TimelineItem 
+                    title="Incident Resolved" 
+                    date={ticket.resolvedAt} 
+                    description={ticket.resolutionNotes || "Technician has resolved the issue."}
+                    completed={true}
+                    color="green"
+                  />
+                )}
+                {ticket.closedAt && (
+                  <TimelineItem 
+                    title="Ticket Closed" 
+                    date={ticket.closedAt} 
+                    description={`Closed by ${ticket.closedBy?.fullName}`}
+                    completed={true}
+                    color="gray"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
           <CommentSection ticketId={ticket.id} />
         </div>
 
@@ -107,10 +200,12 @@ export default function TicketDetailPage() {
                   {ticket.assignedTechnician ? ticket.assignedTechnician.fullName : <span className="text-gray-400 italic">Unassigned</span>}
                 </span>
               </div>
-              {ticket.resourceId && (
+              {ticket.resolutionNotes && (
                 <div>
-                  <span className="block text-xs font-semibold text-gray-500 uppercase">Related Asset</span>
-                  <span className="block text-sm font-medium text-gray-900 mt-1">{ticket.resourceId.split('-')[0]}</span>
+                  <span className="block text-xs font-semibold text-gray-500 uppercase">Resolution Notes</span>
+                  <p className="text-sm text-green-700 bg-green-50 p-3 rounded-lg mt-2 border border-green-100 italic">
+                    "{ticket.resolutionNotes}"
+                  </p>
                 </div>
               )}
               <div className="pt-4 border-t border-gray-100">
@@ -152,6 +247,36 @@ export default function TicketDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TimelineItem({ title, date, description, completed, color = 'blue' }: { 
+  title: string; 
+  date: string; 
+  description: string; 
+  completed: boolean;
+  color?: 'blue' | 'green' | 'gray';
+}) {
+  const colorMap = {
+    blue: 'bg-blue-600',
+    green: 'bg-emerald-500',
+    gray: 'bg-gray-400'
+  };
+
+  return (
+    <div className="relative pl-8 pb-2">
+      <div className="absolute left-[3px] top-1 bottom-0 w-[2px] bg-gray-100"></div>
+      <div className={`absolute left-0 top-1 w-2 h-2 rounded-full z-10 ${completed ? colorMap[color] : 'bg-gray-200'}`}></div>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-gray-900">{title}</span>
+          <span className="text-[10px] font-medium text-gray-400">
+             {new Date(date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
     </div>
   );

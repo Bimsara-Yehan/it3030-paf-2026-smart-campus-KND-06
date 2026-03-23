@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketApi } from '../../api/tickets';
 import { ticketKeys } from '../../hooks/useTickets';
-import { TicketStatus, TicketPriority } from '../../types/ticket';
-import type { TicketResponse } from '../../types/ticket';
+import { useToastStore } from '../../store/useToastStore';
+import type { TicketResponse, TicketStatus } from '../../types/ticket';
 import { Link } from 'react-router-dom';
 
 const COLUMNS = [
-  TicketStatus.OPEN,
-  TicketStatus.IN_PROGRESS,
-  TicketStatus.RESOLVED,
-  TicketStatus.CLOSED,
-  TicketStatus.REJECTED,
-];
+  'OPEN',
+  'IN_PROGRESS',
+  'RESOLVED',
+  'CLOSED',
+  'REJECTED',
+] as TicketStatus[];
 
 interface KanbanBoardProps {
   tickets: TicketResponse[];
@@ -20,15 +20,20 @@ interface KanbanBoardProps {
 
 export default function KanbanBoard({ tickets }: KanbanBoardProps) {
   const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
   const [draggedTicketId, setDraggedTicketId] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState<TicketStatus | null>(null);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TicketStatus }) =>
       ticketApi.updateTicketStatus(id, { status }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
+      addToast(`Ticket #${variables.id.split('-')[0]} moved to ${variables.status.replace('_', ' ')}`, 'success');
     },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to move ticket', 'error');
+    }
   });
 
   const handleDragStart = (e: React.DragEvent, ticketId: string) => {
@@ -65,12 +70,12 @@ export default function KanbanBoard({ tickets }: KanbanBoardProps) {
     setDraggedTicketId(null);
   };
 
-  const getPriorityColor = (priority: TicketPriority) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case TicketPriority.CRITICAL: return 'bg-red-500';
-      case TicketPriority.HIGH: return 'bg-orange-500';
-      case TicketPriority.MEDIUM: return 'bg-yellow-500';
-      case TicketPriority.LOW: return 'bg-green-500';
+      case 'CRITICAL': return 'bg-red-500';
+      case 'HIGH': return 'bg-orange-500';
+      case 'MEDIUM': return 'bg-yellow-500';
+      case 'LOW': return 'bg-green-500';
       default: return 'bg-gray-500';
     }
   };
@@ -112,8 +117,8 @@ export default function KanbanBoard({ tickets }: KanbanBoardProps) {
                     draggable
                     onDragStart={(e) => handleDragStart(e, ticket.id)}
                     onDragEnd={() => setDraggedTicketId(null)}
-                    className={`bg-white p-4 rounded-lg shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group ${
-                      isDragging ? 'opacity-40 scale-95 border-blue-300' : ''
+                    className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group animate-in slide-in-from-bottom duration-500 ${
+                      isDragging ? 'opacity-40 scale-95 border-blue-300 ring-2 ring-blue-100' : ''
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -150,7 +155,7 @@ export default function KanbanBoard({ tickets }: KanbanBoardProps) {
                         {ticket.assignedTechnician ? ticket.assignedTechnician.fullName : 'Unassigned'}
                       </span>
                       <span className="text-[10px] text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded">
-                        {ticket.category.replace('_', ' ')}
+                        {ticket.category?.replace('_', ' ')}
                       </span>
                     </div>
                   </div>
@@ -158,8 +163,13 @@ export default function KanbanBoard({ tickets }: KanbanBoardProps) {
               })}
               
               {columnTickets.length === 0 && (
-                <div className="h-full min-h-[100px] flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg">
-                  <span className="text-xs text-gray-400 font-medium">Drop tickets here</span>
+                <div className="h-full min-h-[120px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 group-hover:bg-white transition-colors">
+                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-2 shimmer">
+                     <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                     </svg>
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Drop here</span>
                 </div>
               )}
             </div>

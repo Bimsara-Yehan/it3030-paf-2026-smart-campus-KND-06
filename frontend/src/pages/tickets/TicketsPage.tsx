@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { useTickets } from '../../hooks/useTickets';
 import TicketForm from '../../components/tickets/TicketForm';
 import KanbanBoard from '../../components/tickets/KanbanBoard';
-import { TicketStatus, TicketPriority } from '../../types/ticket';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
 
 export default function TicketsPage() {
   const { user } = useAuth();
@@ -14,29 +12,29 @@ export default function TicketsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'LIST' | 'BOARD'>('LIST');
 
-  const isElevated = user?.role === UserRole.ADMIN || user?.role === UserRole.TECHNICIAN;
+  const isElevated = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
 
   const filteredTickets = tickets?.filter((t) => 
     filterStatus === 'ALL' ? true : t.status === filterStatus
   ) || [];
 
-  const getStatusBadgeColor = (status: TicketStatus) => {
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case TicketStatus.OPEN: return 'bg-blue-100 text-blue-800 border-blue-200';
-      case TicketStatus.IN_PROGRESS: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case TicketStatus.RESOLVED: return 'bg-green-100 text-green-800 border-green-200';
-      case TicketStatus.CLOSED: return 'bg-gray-100 text-gray-800 border-gray-200';
-      case TicketStatus.REJECTED: return 'bg-red-100 text-red-800 border-red-200';
+      case 'OPEN': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'RESOLVED': return 'bg-green-100 text-green-800 border-green-200';
+      case 'CLOSED': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'REJECTED': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getPriorityBadgeColor = (priority: TicketPriority) => {
+  const getPriorityBadgeColor = (priority: string) => {
     switch (priority) {
-      case TicketPriority.CRITICAL: return 'text-red-600 bg-red-50';
-      case TicketPriority.HIGH: return 'text-orange-600 bg-orange-50';
-      case TicketPriority.MEDIUM: return 'text-yellow-600 bg-yellow-50';
-      case TicketPriority.LOW: return 'text-green-600 bg-green-50';
+      case 'CRITICAL': return 'text-red-600 bg-red-50';
+      case 'HIGH': return 'text-orange-600 bg-orange-50';
+      case 'MEDIUM': return 'text-yellow-600 bg-yellow-50';
+      case 'LOW': return 'text-green-600 bg-green-50';
       default: return 'text-gray-600 bg-gray-50';
     }
   };
@@ -48,7 +46,7 @@ export default function TicketsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Incident Support Tickets</h1>
           <p className="text-gray-500 mt-1">
-            {user?.role === UserRole.USER ? 'Track issues you have reported across campus.' : 'Manage and resolve campus maintenance incidents.'}
+            {user?.role === 'USER' ? 'Track issues you have reported across campus.' : 'Manage and resolve campus maintenance incidents.'}
           </p>
         </div>
         <button
@@ -63,9 +61,9 @@ export default function TicketsPage() {
       </div>
 
       {/* Filter and View Toggle Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row justify-between gap-4">
+      <div className="glass p-4 rounded-2xl shadow-sm border border-white/40 mb-6 flex flex-col sm:flex-row justify-between gap-4 sticky top-4 z-10 animate-in slide-in-from-bottom duration-500">
         <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0">
-          {['ALL', ...Object.values(TicketStatus)].map((status) => (
+          {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'].map((status) => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
@@ -105,11 +103,10 @@ export default function TicketsPage() {
       {/* Main Content Area */}
       <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center p-12">
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-500 font-medium animate-pulse">Loading system tickets...</p>
-            </div>
+          <div className="p-8 space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-16 w-full shimmer rounded-xl border border-gray-100" />
+            ))}
           </div>
         ) : error ? (
           <div className="flex-1 flex items-center justify-center p-12 text-center">
@@ -122,19 +119,19 @@ export default function TicketsPage() {
             </div>
           </div>
         ) : filteredTickets.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center p-12 text-center">
+          <div className="flex-1 flex items-center justify-center p-12 text-center animate-in scale-in">
             <div className="max-w-md">
-              <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
+                <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No tickets found</h3>
-              <p className="text-gray-500 mb-6">There are no tickets matching this status. Everything is running smoothly!</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">All Clear!</h3>
+              <p className="text-gray-500 mb-8 leading-relaxed">There are no tickets matching this status. Everything on campus is running smoothly!</p>
               {filterStatus !== 'ALL' && (
                 <button
                   onClick={() => setFilterStatus('ALL')}
-                  className="text-blue-600 font-medium hover:text-blue-800 hover:underline"
+                  className="px-6 py-2 bg-gray-900 text-white rounded-xl font-semibold hover:bg-black transition-all shadow-md active:scale-95"
                 >
                   Clear filters
                 </button>
@@ -147,7 +144,7 @@ export default function TicketsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 animate-in fade-in duration-700">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket Details</th>
@@ -168,11 +165,11 @@ export default function TicketsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                      <span className="text-sm text-gray-700">{ticket.category.replace('_', ' ')}</span>
+                      <span className="text-sm text-gray-700">{ticket.category?.replace('_', ' ')}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusBadgeColor(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ')}
+                        {ticket.status?.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">

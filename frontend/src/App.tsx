@@ -61,11 +61,14 @@ const queryClient = new QueryClient({
   },
 });
 
+import ToastContainer from './components/ui/ToastContainer';
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
+          <ToastContainer />
           <Routes>
             {/* ── Public routes (no auth, no layout) ── */}
             <Route path="/login"     element={<LoginPage />} />
