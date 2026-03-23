@@ -39,6 +39,9 @@ public class Ticket {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @Column(name = "title", nullable = false, length = 100)
+    private String title;
+
     /** The user who reported the incident. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

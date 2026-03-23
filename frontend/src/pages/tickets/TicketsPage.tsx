@@ -11,12 +11,27 @@ export default function TicketsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'LIST' | 'BOARD'>('LIST');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'NEWEST' | 'PRIORITY' | 'STATUS'>('NEWEST');
 
   const isElevated = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
 
-  const filteredTickets = tickets?.filter((t) => 
-    filterStatus === 'ALL' ? true : t.status === filterStatus
-  ) || [];
+  const filteredTickets = (tickets || [])
+    .filter((t) => (filterStatus === 'ALL' ? true : t.status === filterStatus))
+    .filter((t) => 
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      t.id.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'PRIORITY') {
+        const priorityMap = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+        return priorityMap[b.priority] - priorityMap[a.priority];
+      }
+      if (sortBy === 'STATUS') {
+        return a.status.localeCompare(b.status);
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -78,26 +93,51 @@ export default function TicketsPage() {
           ))}
         </div>
 
-        {isElevated && (
-          <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-center shrink-0">
-            <button
-              onClick={() => setViewMode('LIST')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                viewMode === 'LIST' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              List View
-            </button>
-            <button
-              onClick={() => setViewMode('BOARD')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                viewMode === 'BOARD' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Board View
-            </button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by ID or title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all bg-gray-50/50"
+            />
           </div>
-        )}
+          
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
+          >
+            <option value="NEWEST">Latest First</option>
+            <option value="PRIORITY">Highest Priority</option>
+            <option value="STATUS">By Status</option>
+          </select>
+
+          {isElevated && (
+            <div className="flex bg-gray-100 p-1 rounded-xl self-start sm:self-center shrink-0 shadow-inner">
+              <button
+                onClick={() => setViewMode('LIST')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  viewMode === 'LIST' ? 'bg-white shadow-sm text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('BOARD')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  viewMode === 'BOARD' ? 'bg-white shadow-sm text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Board
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}

@@ -15,6 +15,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   const queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const {
     register,
@@ -32,12 +33,28 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: CreateTicketRequest) => ticketApi.createTicket(data),
+    mutationFn: async (data: CreateTicketRequest) => {
+      // 1. Create the ticket first
+      const ticket = await ticketApi.createTicket(data);
+      
+      // 2. If there are files, upload them sequentially
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          try {
+            await ticketApi.uploadAttachment(ticket.id, file);
+          } catch (err) {
+            console.error(`Failed to upload ${file.name}`, err);
+            // We continue with other files even if one fails
+          }
+        }
+      }
+      return ticket;
+    },
     onSuccess: () => {
-      // Invalidate the tickets lists so the new ticket immediately appears in the UI
       queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
-      addToast('Ticket created successfully!', 'success');
+      addToast('Ticket created successfully with attachments!', 'success');
       reset();
+      setSelectedFiles([]);
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -126,13 +143,64 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
         </div>
 
         {/* Preferred Contact */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact (Optional)</label>
-          <input
-            {...register('preferredContact')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-            placeholder="Phone number or alternative email"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact (Optional)</label>
+            <input
+              {...register('preferredContact')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+              placeholder="Phone number or alternative email"
+            />
+          </div>
+          
+          <div className="md:col-span-1">
+             <label className="block text-sm font-medium text-gray-700 mb-1">
+               Supporting Documents ({selectedFiles.length}/3)
+             </label>
+             <div className="relative">
+               <input
+                 type="file"
+                 multiple
+                 accept="image/*,.pdf,.doc,.docx"
+                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                 onChange={(e) => {
+                   const files = Array.from(e.target.files || []);
+                   if (selectedFiles.length + files.length > 3) {
+                     addToast('Maximum 3 files allowed', 'warning');
+                     return;
+                   }
+                   setSelectedFiles([...selectedFiles, ...files]);
+                 }}
+               />
+               <div className="flex items-center justify-center w-full px-4 py-2 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                 <div className="flex items-center gap-2 text-blue-600">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span className="text-xs font-semibold">Attach Files</span>
+                 </div>
+               </div>
+             </div>
+             {/* Selected Files List */}
+             {selectedFiles.length > 0 && (
+               <div className="mt-2 space-y-1">
+                 {selectedFiles.map((file, idx) => (
+                   <div key={idx} className="flex items-center justify-between text-xs bg-gray-100 p-1.5 rounded border border-gray-200">
+                     <span className="truncate max-w-[150px]">{file.name}</span>
+                     <button 
+                       type="button"
+                       onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== idx))}
+                       className="text-red-500 hover:text-red-700"
+                     >
+                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                       </svg>
+                     </button>
+                   </div>
+                 ))}
+               </div>
+             )}
+          </div>
         </div>
 
         {/* Submit Actions */}

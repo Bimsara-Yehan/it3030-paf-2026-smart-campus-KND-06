@@ -1,6 +1,6 @@
 // Types matching Backend DTOs for Module C: Incident Ticketing
 
-import type { User } from './index';
+
 
 export const TicketStatus = {
   OPEN: 'OPEN',
@@ -32,22 +32,24 @@ export type TicketCategory = typeof TicketCategory[keyof typeof TicketCategory];
 
 export interface TicketResponse {
   id: string;
-  reporter?: User;
+  title: string;
+  reporterName: string;
+  reporterId: string;
   resourceId?: string; // UUID from backend
   category: TicketCategory;
-  title: string;
   description: string;
   priority: TicketPriority;
   status: TicketStatus;
   preferredContact?: string;
-  assignedTechnician?: User;
-  assignedBy?: User;
+  assignedTechnicianName?: string;
+  assignedTechnicianId?: string;
+  assignedByName?: string;
+  assignedById?: string;
   assignedAt?: string;
   resolutionNotes?: string;
   resolvedAt?: string;
-  closedBy?: User;
   closedAt?: string;
-  version: number;
+  rejectReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,7 +57,8 @@ export interface TicketResponse {
 export interface CommentResponse {
   id: string;
   ticketId: string;
-  author: User;
+  authorName: string;
+  authorId: string;
   message: string;
   createdAt: string;
   updatedAt: string;
@@ -64,7 +67,6 @@ export interface CommentResponse {
 export interface AttachmentResponse {
   id: string;
   ticketId: string;
-  uploader: User;
   fileName: string;
   fileUrl: string;
   mimeType: string;

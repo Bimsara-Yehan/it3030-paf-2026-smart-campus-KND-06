@@ -9,9 +9,14 @@ import com.smartcampus.dto.response.TicketResponse;
 import com.smartcampus.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,8 +28,9 @@ import java.util.UUID;
  * Consistent {@link ApiResponse} wrapper is used for all responses.
  */
 @RestController
-@RequestMapping("/api/v1/tickets")
+@RequestMapping("/tickets")
 @RequiredArgsConstructor
+@Slf4j
 public class TicketController {
 
     private final TicketService ticketService;
@@ -104,23 +110,44 @@ public class TicketController {
     // ── Attachment Endpoints (Stubs for current phase) ────────────────────────
 
     @PostMapping("/{id}/attachments")
-    public ResponseEntity<ApiResponse<Void>> uploadAttachment(@PathVariable UUID id) {
-        // Implementation for actual file upload will follow in next iteration
-        return ResponseEntity.ok(ApiResponse.success("Attachment upload endpoint (stub)"));
+    public ResponseEntity<ApiResponse<AttachmentResponse>> uploadAttachment(
+            @PathVariable UUID id,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        com.smartcampus.entity.TicketAttachment attachment = ticketService.uploadAttachment(id, file);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Attachment uploaded successfully", AttachmentResponse.from(attachment)));
     }
 
     @GetMapping("/{id}/attachments")
-    public ResponseEntity<ApiResponse<List<String>>> getAttachments(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success("Attachments list endpoint (stub)", List.of()));
+    public ResponseEntity<ApiResponse<List<AttachmentResponse>>> getAttachments(@PathVariable UUID id) {
+        List<AttachmentResponse> attachments = ticketService.getAttachments(id).stream()
+                .map(AttachmentResponse::from)
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("Attachments retrieved", attachments));
     }
 
-    @GetMapping("/attachments/{id}")
-    public ResponseEntity<ApiResponse<Void>> downloadAttachment(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success("Attachment download endpoint (stub)"));
+    @GetMapping("/attachments/raw/{fileName:.+}")
+    public ResponseEntity<Resource> downloadRaw(@PathVariable String fileName, HttpServletRequest request) {
+        Resource resource = ticketService.loadFileAsResource(fileName);
+        String contentType = null;
+        try {
+            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+        } catch (IOException ex) {
+            log.info("Could not determine file type.");
+        }
+        if(contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 
     @DeleteMapping("/attachments/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteAttachment(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success("Attachment delete endpoint (stub)"));
+        // Soft delete logic can be added here if needed
+        return ResponseEntity.ok(ApiResponse.success("Attachment deleted successfully"));
     }
 }

@@ -140,10 +140,11 @@ public class JwtFilter extends OncePerRequestFilter {
             // extractEmail() also verifies the signature — a tampered token throws here.
             final String email = jwtService.extractEmail(jwt);
 
-            // ── Step 5: Skip if already authenticated ─────────────────────────
-            // If a previous filter already set an Authentication object in the
-            // SecurityContext (e.g. from a session), do not overwrite it.
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // ── Step 5: Always prioritize JWT ─────────────────────────────────
+            // Overwrite any existing authentication (e.g. from an OAuth session)
+            // with the DB user record linked to this JWT. This ensures that
+            // @AuthenticationPrincipal User casts in controllers never fail.
+            if (email != null) {
 
                 // ── Step 6: Load the user from the database ───────────────────
                 // UserDetailsService hits the DB to get the live user record,

@@ -5,10 +5,10 @@ import com.smartcampus.dto.request.UpdateTicketStatusRequest;
 import com.smartcampus.dto.response.TicketResponse;
 import com.smartcampus.entity.Ticket;
 import com.smartcampus.entity.User;
-import com.smartcampus.enums.Role;
 import com.smartcampus.enums.TicketCategory;
 import com.smartcampus.enums.TicketPriority;
 import com.smartcampus.enums.TicketStatus;
+import com.smartcampus.enums.UserRole;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.repository.CommentRepository;
@@ -62,14 +62,14 @@ class TicketServiceTest {
                 .id(UUID.randomUUID())
                 .name("Student User")
                 .email("student@u.edu")
-                .role(Role.USER)
+                .role(UserRole.USER)
                 .build();
 
         testTechnician = User.builder()
                 .id(UUID.randomUUID())
                 .name("Tech Worker")
                 .email("tech@u.edu")
-                .role(Role.TECHNICIAN)
+                .role(UserRole.TECHNICIAN)
                 .build();
 
         mockTicket = Ticket.builder()
@@ -139,7 +139,7 @@ class TicketServiceTest {
         // Arrange
         when(ticketRepository.findByIdAndDeletedAtIsNull(TICKET_ID)).thenReturn(Optional.of(mockTicket));
         
-        User anotherUser = User.builder().id(UUID.randomUUID()).role(Role.USER).build();
+        User anotherUser = User.builder().id(UUID.randomUUID()).role(UserRole.USER).build();
         setCurrentUser(anotherUser); // Random user trying to access the ticket
 
         // Act & Assert
@@ -180,7 +180,7 @@ class TicketServiceTest {
     void updateTicketStatus_ThrowsForbidden_WhenUnassignedTechnicianUpdates() {
         // Arrange
         // Another technician is assigned
-        User anotherTech = User.builder().id(UUID.randomUUID()).role(Role.TECHNICIAN).build();
+        User anotherTech = User.builder().id(UUID.randomUUID()).role(UserRole.TECHNICIAN).build();
         mockTicket.setAssignedTechnician(anotherTech);
         
         when(ticketRepository.findByIdAndDeletedAtIsNull(TICKET_ID)).thenReturn(Optional.of(mockTicket));
@@ -197,7 +197,7 @@ class TicketServiceTest {
     @Test
     void assignTicket_Success_WhenAdminAssigns() {
         // Arrange
-        User testAdmin = User.builder().id(UUID.randomUUID()).role(Role.ADMIN).email("admin").build();
+        User testAdmin = User.builder().id(UUID.randomUUID()).role(UserRole.ADMIN).email("admin").build();
         setCurrentUser(testAdmin); // Must be an ADMIN acting on the ticket
 
         when(ticketRepository.findByIdAndDeletedAtIsNull(TICKET_ID)).thenReturn(Optional.of(mockTicket));
@@ -211,8 +211,8 @@ class TicketServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(TicketStatus.IN_PROGRESS, response.getStatus());
-        assertEquals(testTechnician.getId(), response.getAssignedTechnician().getId());
-        assertEquals(testAdmin.getId(), response.getAssignedBy().getId());
+        assertEquals(testTechnician.getId(), response.getAssignedTechnicianId());
+        assertEquals(testAdmin.getId(), response.getAssignedById());
         assertNotNull(response.getAssignedAt());
         verify(ticketRepository).save(any(Ticket.class));
     }

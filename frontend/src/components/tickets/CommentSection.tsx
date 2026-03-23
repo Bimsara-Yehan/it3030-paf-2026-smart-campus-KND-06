@@ -47,11 +47,11 @@ export default function CommentSection({ ticketId }: { ticketId: string }) {
               {comments?.map((comment) => (
                 <div key={comment.id} className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-blue-700 font-bold uppercase">{comment.author.fullName.charAt(0)}</span>
+                    <span className="text-blue-700 font-bold uppercase">{comment.authorName.charAt(0)}</span>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-2xl rounded-tl-none p-4 border border-gray-100">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="font-semibold text-sm text-gray-900">{comment.author.fullName}</span>
+                      <span className="font-semibold text-sm text-gray-900">{comment.authorName}</span>
                       <span className="text-xs text-gray-500">
                         {new Date(comment.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>

@@ -29,6 +29,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.io.IOException;
 
 /**
  * Service class for managing maintenance tickets, comments, and attachments.
@@ -60,6 +65,7 @@ public class TicketService {
         User currentUser = getCurrentUser();
         
         Ticket ticket = Ticket.builder()
+                .title(request.getTitle())
                 .reporter(currentUser)
                 .resourceId(request.getResourceId())
                 .category(request.getCategory())
@@ -240,7 +246,20 @@ public class TicketService {
     }
 
     private User getCurrentUser() {
-        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        org.springframework.security.core.Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new com.smartcampus.exception.UnauthorizedException("No authenticated user found");
+        }
+
+        String email;
+        if (authentication instanceof org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken oauth2Token) {
+            email = (String) oauth2Token.getPrincipal().getAttributes().get("email");
+        } else {
+            email = authentication.getName();
+        }
+
+        return userRepository.findByEmailAndDeletedAtIsNull(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User account not found for email: " + email));
     }
 
     private void validateTicketAccess(Ticket ticket) {
@@ -260,5 +279,76 @@ public class TicketService {
     private void sendNotificationStub(User user, String message) {
         log.warn("[STUB] Notification for {}: {}", user.getEmail(), message);
         // This will be replaced with member4's NotificationService.sendNotification(user, message);
+    }
+
+    /**
+     * Uploads an attachment for a specific ticket.
+     */
+    @Transactional
+    public TicketAttachment uploadAttachment(UUID ticketId, org.springframework.web.multipart.MultipartFile file) {
+        Ticket ticket = ticketRepository.findByIdAndDeletedAtIsNull(ticketId)
+                .orElseThrow(() -> new com.smartcampus.exception.ResourceNotFoundException("Ticket not found"));
+
+        // Limit attachments to 3 per ticket as per Module C requirements
+        long count = attachmentRepository.findByTicketIdAndDeletedAtIsNull(ticketId).size();
+        if (count >= 3) {
+            throw new com.smartcampus.exception.BadRequestException("Maximum 3 attachments per ticket exceeded");
+        }
+
+        try {
+            // Local storage logic for MVP (should be replaced by S3/Cloudinary in production)
+            String fileName = org.springframework.util.StringUtils.cleanPath(file.getOriginalFilename());
+            String storageName = UUID.randomUUID().toString() + "_" + fileName;
+            
+            // Resolve path to backend/uploads (relative to project root usually)
+            Path uploadPath = Paths.get("uploads").toAbsolutePath();
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            Path filePath = uploadPath.resolve(storageName);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // The URL the frontend will use to fetch the file
+            String fileUrl = "/api/v1/tickets/attachments/raw/" + storageName;
+
+            TicketAttachment attachment = TicketAttachment.builder()
+                    .ticket(ticket)
+                    .fileName(fileName)
+                    .fileUrl(fileUrl)
+                    .mimeType(file.getContentType())
+                    .fileSize(file.getSize())
+                    .build();
+
+            return attachmentRepository.save(attachment);
+        } catch (IOException e) {
+            log.error("Failed to store file on disk", e);
+            throw new com.smartcampus.exception.BadRequestException("Could not store file. Please try again!");
+        }
+    }
+
+    /**
+     * Retrieves an attachment by file name from disk for raw download.
+     */
+    public org.springframework.core.io.Resource loadFileAsResource(String fileName) {
+        try {
+            Path filePath = Paths.get("uploads").toAbsolutePath().resolve(fileName).normalize();
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
+            if(resource.exists()) {
+                return resource;
+            } else {
+                throw new com.smartcampus.exception.ResourceNotFoundException("File not found " + fileName);
+            }
+        } catch (Exception ex) {
+            throw new com.smartcampus.exception.ResourceNotFoundException("File not found " + fileName);
+        }
+    }
+
+    /**
+     * Retrieves all attachments for a ticket.
+     */
+    @Transactional(readOnly = true)
+    public List<TicketAttachment> getAttachments(UUID ticketId) {
+        return attachmentRepository.findByTicketIdAndDeletedAtIsNull(ticketId);
     }
 }

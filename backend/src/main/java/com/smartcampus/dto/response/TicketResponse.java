@@ -22,6 +22,7 @@ import java.util.UUID;
 public class TicketResponse {
 
     private UUID id;
+    private String title;
     private String reporterName;
     private UUID reporterId;
     private UUID resourceId;
@@ -32,10 +33,13 @@ public class TicketResponse {
     private String preferredContact;
     private String assignedTechnicianName;
     private UUID assignedTechnicianId;
+    private String assignedByName;
+    private UUID assignedById;
     private LocalDateTime assignedAt;
     private String resolutionNotes;
     private LocalDateTime resolvedAt;
     private LocalDateTime closedAt;
+    private String rejectReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -48,6 +52,7 @@ public class TicketResponse {
     public static TicketResponse from(Ticket ticket) {
         return TicketResponse.builder()
                 .id(ticket.getId())
+                .title(ticket.getTitle())
                 .reporterName(ticket.getReporter() != null ? ticket.getReporter().getName() : null)
                 .reporterId(ticket.getReporter() != null ? ticket.getReporter().getId() : null)
                 .resourceId(ticket.getResourceId())
@@ -58,10 +63,13 @@ public class TicketResponse {
                 .preferredContact(ticket.getPreferredContact())
                 .assignedTechnicianName(ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getName() : null)
                 .assignedTechnicianId(ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getId() : null)
+                .assignedByName(ticket.getAssignedBy() != null ? ticket.getAssignedBy().getName() : null)
+                .assignedById(ticket.getAssignedBy() != null ? ticket.getAssignedBy().getId() : null)
                 .assignedAt(ticket.getAssignedAt())
                 .resolutionNotes(ticket.getResolutionNotes())
                 .resolvedAt(ticket.getResolvedAt())
                 .closedAt(ticket.getClosedAt())
+                .rejectReason(ticket.getRejectReason())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .build();

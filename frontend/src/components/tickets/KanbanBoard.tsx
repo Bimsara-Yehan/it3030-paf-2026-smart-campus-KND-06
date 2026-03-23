@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketApi } from '../../api/tickets';
 import { ticketKeys } from '../../hooks/useTickets';
 import { useToastStore } from '../../store/useToastStore';
+import { calculateSLA } from '../../utils/slaUtils';
 import type { TicketResponse, TicketStatus } from '../../types/ticket';
 import { Link } from 'react-router-dom';
 
@@ -145,6 +146,18 @@ export default function KanbanBoard({ tickets }: KanbanBoardProps) {
                     <h4 className="text-sm font-semibold text-gray-800 mb-1 leading-snug">
                       {ticket.title}
                     </h4>
+
+                    {/* SLA Indicator */}
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        calculateSLA(ticket.priority, ticket.createdAt, ticket.status, ticket.resolvedAt).isOverdue 
+                          ? 'bg-red-500 animate-pulse' 
+                          : 'bg-emerald-400'
+                      }`} />
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                        {calculateSLA(ticket.priority, ticket.createdAt, ticket.status, ticket.resolvedAt).label}
+                      </span>
+                    </div>
                     
                     <p className="text-xs text-gray-500 line-clamp-2 mb-3">
                       {ticket.description}

@@ -23,6 +23,8 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Bar,
+  BarChart,
 } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import axiosClient from '@/api/axiosClient';
@@ -105,6 +107,40 @@ export default function DashboardPage() {
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
+  const ticketsByCategory = useMemo(() => {
+    if (!tickets) return [];
+    const counts: Record<string, number> = {};
+    tickets.forEach(t => {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value], i) => ({
+      name: name.replace('_', ' '),
+      value,
+      color: [`#3B82F6`, `#10B981`, `#F59E0B`, `#EF4444`, `#8B5CF6`][i % 5]
+    }));
+  }, [tickets]);
+
+  const ticketsByDay = useMemo(() => {
+    if (!tickets) return [];
+    const last7Days = Array.from({length: 7}).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d.toISOString().split('T')[0];
+    });
+    
+    const counts: Record<string, number> = {};
+    tickets.forEach(t => {
+      const day = t.createdAt.split('T')[0];
+      if (last7Days.includes(day)) {
+        counts[day] = (counts[day] || 0) + 1;
+      }
+    });
+
+    return last7Days.map(date => ({
+      date: new Date(date).toLocaleDateString([], {month: 'short', day: 'numeric'}),
+      count: counts[date] || 0
+    }));
+  }, [tickets]);
   /**
    * Registration trend for the last 7 calendar days (today included).
    * Each entry has a short date label for the X-axis and a count for the Y-axis.
@@ -315,8 +351,51 @@ export default function DashboardPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ALL ROLES: Welcome card + module quick-links
+          ADMIN/TECH: Ticket Analytics
       ═══════════════════════════════════════════════════════════════════ */}
+      {(isAdmin || user?.role === 'TECHNICIAN') && tickets && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom duration-700">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900 mb-6 uppercase tracking-wider">Tickets by Category</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={ticketsByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {ticketsByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<PieTooltip />} />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+           </div>
+
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900 mb-6 uppercase tracking-wider">Recent Ticket Volume</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={ticketsByDay}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#9CA3AF'}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#9CA3AF'}} />
+                    <Tooltip cursor={{fill: '#F9FAFB'}} content={<TrendTooltip />} />
+                    <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+           </div>
+        </div>
+      )}
       <div className="glass rounded-3xl bg-white/40 p-8 shadow-sm ring-1 ring-white/50 border border-white/20 animate-in slide-in-from-bottom duration-700">
         <p className="text-sm font-medium text-blue-600">Welcome back</p>
 
