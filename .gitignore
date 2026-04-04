@@ -33,3 +33,6 @@ logs/
 
 # Maven wrapper (keep mvnw itself, ignore wrapper jar)
 .mvn/wrapper/maven-wrapper.jar
+
+# Project analysis documentation
+*.md
