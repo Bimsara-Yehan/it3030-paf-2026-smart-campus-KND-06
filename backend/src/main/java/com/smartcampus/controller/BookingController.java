@@ -7,11 +7,14 @@ import com.smartcampus.enums.ResourceType;
 import com.smartcampus.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -91,5 +94,36 @@ public class BookingController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
         return ResponseEntity.ok(bookingService.findAlternatives(type, minCapacity, start, end));
+    }
+
+    // 6. Innovation Feature: .ICS Calendar Export
+    @GetMapping("/{id}/calendar")
+    public ResponseEntity<String> downloadCalendarEvent(@PathVariable UUID id) {
+        Booking booking = bookingService.getBooking(id);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+        String startTime = booking.getStartTime().format(formatter);
+        String endTime = booking.getEndTime().format(formatter);
+        String now = LocalDateTime.now().format(formatter);
+        
+        String summary = booking.getReason() != null ? booking.getReason().replace("\n", " ") : "Smart Campus Booking";
+
+        String icsContent = "BEGIN:VCALENDAR\r\n" +
+                "VERSION:2.0\r\n" +
+                "PRODID:-//Smart Campus//Booking Engine//EN\r\n" +
+                "BEGIN:VEVENT\r\n" +
+                "UID:" + booking.getId() + "@smartcampus.com\r\n" +
+                "DTSTAMP:" + now + "\r\n" +
+                "DTSTART:" + startTime + "\r\n" +
+                "DTEND:" + endTime + "\r\n" +
+                "SUMMARY:Booking: " + summary + "\r\n" +
+                "END:VEVENT\r\n" +
+                "END:VCALENDAR";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/calendar"));
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"booking-" + id + ".ics\"");
+
+        return new ResponseEntity<>(icsContent, headers, HttpStatus.OK);
     }
 }
