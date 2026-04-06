@@ -34,5 +34,10 @@ logs/
 # Maven wrapper (keep mvnw itself, ignore wrapper jar)
 .mvn/wrapper/maven-wrapper.jar
 
+<<<<<<< HEAD
 # Project analysis documentation
 *.md
+=======
+# Local dev config with real credentials - never commit
+backend/src/main/resources/application-dev.yml
+>>>>>>> 276edd923a094800a0071db98f5eea727b3b951a

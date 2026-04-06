@@ -1,0 +1,465 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Smart Campus Operations Hub — API",
+    "description": "REST API collection for Smart Campus Operations Hub (IT3030 PAF 2026, SLIIT).\n\nAuth flow:\n1. Run Login first — the test script auto-saves accessToken and refreshToken.\n2. Every protected request uses Bearer {{accessToken}} via collection-level auth.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "00000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "10000000-0000-0000-0000-000000000006",
+      "type": "string"
+    }
+  ],
+
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test User\",\n  \"email\": \"test@test.com\",\n  \"password\": \"Test1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Creates a new user account with the USER role. Returns 201 with accessToken, refreshToken, and user profile."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"accessToken\",  json.data.accessToken);",
+                  "    pm.collectionVariables.set(\"refreshToken\", json.data.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@smartcampus.com\",\n  \"password\": \"Test123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Authenticate with email and password. The Tests script auto-saves accessToken and refreshToken — run this first before any protected request."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Exchange a valid refresh token for a new access token and a rotated refresh token."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Revokes all refresh tokens for the current user, invalidating all active sessions on all devices."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Get Current User (me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Returns the profile of the currently authenticated user resolved from the JWT subject claim."
+          },
+          "response": []
+        }
+
+      ]
+    },
+
+    {
+      "name": "Notifications",
+      "item": [
+
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/notifications",
+            "description": "Returns all notifications for the current user, newest first."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/notifications/unread-count",
+            "description": "Returns the count of unread notifications (read_at IS NULL). Used by the frontend bell badge."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/notifications/{{notificationId}}/read",
+            "description": "Sets read_at on a single notification. Only the owner can mark their own notification as read — returns 403 otherwise."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/notifications/read-all",
+            "description": "Marks every unread notification for the current user as read in a single batch operation."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Delete Notification",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/notifications/{{notificationId}}",
+            "description": "Permanently hard-deletes a notification. Ownership enforced — returns 403 if not the owner."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Get Notification Preferences",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/notifications/preferences",
+            "description": "Returns explicitly saved preferences. Types absent from the list are enabled by default (absence = enabled)."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Update Notification Preference",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/notifications/preferences/BOOKING_APPROVED",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Creates or updates a preference for one notification type. Replace BOOKING_APPROVED in the URL with any valid type: BOOKING_APPROVED, BOOKING_REJECTED, BOOKING_CANCELLED, TICKET_ASSIGNED, TICKET_STATUS_CHANGED, NEW_COMMENT, SYSTEM_ANNOUNCEMENT"
+          },
+          "response": []
+        }
+
+      ]
+    },
+
+    {
+      "name": "Users (Admin)",
+      "item": [
+
+        {
+          "name": "Get All Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users",
+            "description": "Returns all non-deleted user accounts. Requires ADMIN role."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Get My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me",
+            "description": "Returns the current user's profile from the /users controller. Accessible to all roles."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Get User by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "Returns a single user by UUID. Requires ADMIN role."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Update User Role",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}/role",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"TECHNICIAN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Changes a user's role. Requires ADMIN role. Valid values: USER, TECHNICIAN, ADMIN."
+          },
+          "response": []
+        },
+
+        {
+          "name": "Update User Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Activates or deactivates a user account. Requires ADMIN role."
+          },
+          "response": []
+        }
+
+      ]
+    }
+  ]
+}

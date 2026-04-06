@@ -1,129 +1,123 @@
 package com.smartcampus.controller;
 
-import com.smartcampus.dto.BookingRequestDto;
-import com.smartcampus.dto.BookingStatusUpdateDto;
+import com.smartcampus.dto.request.CreateBookingRequest;
+import com.smartcampus.dto.request.UpdateBookingStatusRequest;
+import com.smartcampus.dto.response.ApiResponse;
+import com.smartcampus.dto.response.BookingResponse;
 import com.smartcampus.entity.Booking;
-import com.smartcampus.enums.ResourceType;
+import com.smartcampus.entity.User;
 import com.smartcampus.service.BookingService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Controller managing the Booking Engine (Module B).
  */
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping("/bookings")
+@RequiredArgsConstructor
 public class BookingController {
 
     private final BookingService bookingService;
 
-    @Autowired
-    public BookingController(BookingService bookingService) {
-        this.bookingService = bookingService;
-    }
-
-    // 1. POST Endpoint
+    /**
+     * POST /bookings — Create a new booking (USER)
+     */
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody BookingRequestDto request) {
-        try {
-            Booking booking = bookingService.createBooking(
-                    request.getUserId(),
-                    request.getResourceId(),
-                    request.getStartTime(),
-                    request.getEndTime(),
-                    request.getReason()
-            );
-            return new ResponseEntity<>(booking, HttpStatus.CREATED);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT); // 409 Conflict
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST); // 400 Bad Request
-        }
-    }
-
-    // 2. GET Endpoints
-    @GetMapping
-    public ResponseEntity<List<Booking>> getAllBookings() {
-        return ResponseEntity.ok(bookingService.getAllBookings());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Booking> getBookingById(@PathVariable UUID id) {
-        return ResponseEntity.ok(bookingService.getBooking(id));
-    }
-
-    // 3. PUT/PATCH Endpoint (Admin Approval Workflow)
-    @PutMapping("/{id}/status")
-    public ResponseEntity<?> updateBookingStatus(
-            @PathVariable UUID id, 
-            @RequestBody BookingStatusUpdateDto updateRequest) {
-        try {
-            Booking updatedBooking = bookingService.updateBookingStatus(
-                    id, 
-                    updateRequest.getStatus(), 
-                    updateRequest.getRejectionReason()
-            );
-            return ResponseEntity.ok(updatedBooking);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT); // 409 Conflict logic
-        }
-    }
-
-    // 4. DELETE Endpoint (Cancellation)
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancelBooking(@PathVariable UUID id) {
-        bookingService.deleteBooking(id);
-        return ResponseEntity.noContent().build(); // 204 No Content
-    }
-
-    // 5. Innovation Feature Endpoint
-    @GetMapping("/alternatives")
-    public ResponseEntity<List<UUID>> findAlternatives(
-            @RequestParam ResourceType type,
-            @RequestParam int minCapacity,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return ResponseEntity.ok(bookingService.findAlternatives(type, minCapacity, start, end));
-    }
-
-    // 6. Innovation Feature: .ICS Calendar Export
-    @GetMapping("/{id}/calendar")
-    public ResponseEntity<String> downloadCalendarEvent(@PathVariable UUID id) {
-        Booking booking = bookingService.getBooking(id);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
-        String startTime = booking.getStartTime().format(formatter);
-        String endTime = booking.getEndTime().format(formatter);
-        String now = LocalDateTime.now().format(formatter);
+    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody CreateBookingRequest request) {
         
-        String summary = booking.getReason() != null ? booking.getReason().replace("\n", " ") : "Smart Campus Booking";
+        Booking booking = bookingService.createBooking(currentUser.getId(), request);
+        return new ResponseEntity<>(
+                ApiResponse.success("Booking created successfully.", BookingResponse.from(booking)),
+                HttpStatus.CREATED
+        );
+    }
 
-        String icsContent = "BEGIN:VCALENDAR\r\n" +
-                "VERSION:2.0\r\n" +
-                "PRODID:-//Smart Campus//Booking Engine//EN\r\n" +
-                "BEGIN:VEVENT\r\n" +
-                "UID:" + booking.getId() + "@smartcampus.com\r\n" +
-                "DTSTAMP:" + now + "\r\n" +
-                "DTSTART:" + startTime + "\r\n" +
-                "DTEND:" + endTime + "\r\n" +
-                "SUMMARY:Booking: " + summary + "\r\n" +
-                "END:VEVENT\r\n" +
-                "END:VCALENDAR";
+    /**
+     * GET /bookings — List all bookings (ADMIN)
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getAllBookings() {
+        List<BookingResponse> responses = bookingService.getAllBookings().stream()
+                .map(BookingResponse::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("All bookings retrieved.", responses));
+    }
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("text/calendar"));
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"booking-" + id + ".ics\"");
+    /**
+     * GET /bookings/my — List my bookings (USER)
+     */
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyBookings(
+            @AuthenticationPrincipal User currentUser) {
+        
+        List<BookingResponse> responses = bookingService.getMyBookings(currentUser.getId()).stream()
+                .map(BookingResponse::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("Your bookings retrieved.", responses));
+    }
 
-        return new ResponseEntity<>(icsContent, headers, HttpStatus.OK);
+    /**
+     * GET /bookings/{id} — Get booking details
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(@PathVariable UUID id) {
+        Booking booking = bookingService.getBookingById(id);
+        return ResponseEntity.ok(ApiResponse.success("Booking retrieved.", BookingResponse.from(booking)));
+    }
+
+    /**
+     * PATCH /bookings/{id}/approve — Approve booking (ADMIN)
+     */
+    @PatchMapping("/{id}/approve")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BookingResponse>> approveBooking(@PathVariable UUID id) {
+        Booking booking = bookingService.approveBooking(id);
+        return ResponseEntity.ok(ApiResponse.success("Booking approved successfully.", BookingResponse.from(booking)));
+    }
+
+    /**
+     * PATCH /bookings/{id}/reject — Reject booking (ADMIN)
+     */
+    @PatchMapping("/{id}/reject")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
+            @PathVariable UUID id,
+            @RequestBody UpdateBookingStatusRequest request) {
+        
+        Booking booking = bookingService.rejectBooking(id, request.getReason());
+        return ResponseEntity.ok(ApiResponse.success("Booking rejected successfully.", BookingResponse.from(booking)));
+    }
+
+    /**
+     * PATCH /bookings/{id}/cancel — Cancel booking (USER)
+     */
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable UUID id) {
+        
+        Booking booking = bookingService.cancelBooking(id, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Booking cancelled successfully.", BookingResponse.from(booking)));
+    }
+
+    /**
+     * DELETE /bookings/{id} — Soft delete (ADMIN)
+     */
+    @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteBooking(@PathVariable UUID id) {
+        bookingService.deleteBooking(id);
+        return ResponseEntity.ok(ApiResponse.success("Booking archived successfully."));
     }
 }

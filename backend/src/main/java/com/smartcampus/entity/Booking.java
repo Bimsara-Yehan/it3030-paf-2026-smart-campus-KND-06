@@ -45,8 +45,10 @@ public class Booking {
     @Column(nullable = false)
     private BookingStatus status;
 
-    @Column(columnDefinition = "TEXT")
-    private String reason;
+    @Column(name = "purpose", nullable = false, columnDefinition = "TEXT")
+    private String purpose;
+
+    private Integer attendees;
     
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
@@ -59,11 +61,16 @@ public class Booking {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     
-    @Column(name = "actioned_at")
-    private LocalDateTime actionedAt;
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
     
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 }

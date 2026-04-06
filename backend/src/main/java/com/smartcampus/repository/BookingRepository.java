@@ -41,4 +41,10 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("minCapacity") Integer minCapacity,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    List<Booking> findByUserIdAndDeletedAtIsNull(UUID userId);
+    
+    List<Booking> findAllByDeletedAtIsNull();
+    
+    java.util.Optional<Booking> findByIdAndDeletedAtIsNull(UUID id);
 }
