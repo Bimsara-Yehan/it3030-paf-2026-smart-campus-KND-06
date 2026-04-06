@@ -14,8 +14,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import axiosClient from '@/api/axiosClient';
-import type { ApiResponse, User, UserRole } from '@/types';
+import axiosClient from '../api/axiosClient';
+import type { ApiResponse, User, UserRole } from '../types';
 
 // ── Return type ───────────────────────────────────────────────────────────────
 

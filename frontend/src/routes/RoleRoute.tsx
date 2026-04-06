@@ -13,8 +13,8 @@
  */
 
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import type { UserRole } from '@/types';
+import { useAuth } from '../context/AuthContext';
+import type { UserRole } from '../types';
 
 interface RoleRouteProps {
   /** Roles that are permitted to access the nested routes. */

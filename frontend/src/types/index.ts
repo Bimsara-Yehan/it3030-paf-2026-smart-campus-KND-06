@@ -7,11 +7,22 @@
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-  TECHNICIAN = 'TECHNICIAN',
-}
+// ── Enums (Refactored to Types/Consts for erasableSyntaxOnly) ────────────────
+
+export type UserRole = 'USER' | 'ADMIN' | 'TECHNICIAN';
+export const UserRole = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+  TECHNICIAN: 'TECHNICIAN',
+} as const;
+
+export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export const BookingStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
 
 // ── Domain models ────────────────────────────────────────────────────────────
 
@@ -23,6 +34,26 @@ export interface User {
   profilePicture?: string;
   isActive: boolean;
   createdAt: string; // ISO-8601 date string
+}
+
+export interface Resource {
+  id: string;
+  name: string;
+  type: string;
+  capacity: number;
+}
+
+export interface Booking {
+  id: string;
+  user: User;
+  resource: Resource;
+  startTime: string;
+  endTime: string;
+  status: BookingStatus;
+  reason: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** All notification type values produced by the backend. */

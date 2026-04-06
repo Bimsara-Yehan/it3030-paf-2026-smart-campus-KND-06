@@ -1,31 +1,12 @@
 /**
  * MainLayout — root shell for all authenticated pages.
- *
- * Structure:
- *
- *  ┌─────────────────────────────────────────────────────┐
- *  │  Sidebar (256px, full-height, scroll-independent)   │
- *  │  ┌───────────────────────────────────────────────┐  │
- *  │  │ Topbar (64px fixed height)                    │  │
- *  │  ├───────────────────────────────────────────────┤  │
- *  │  │ <Outlet /> (remaining height, scrollable)     │  │
- *  │  └───────────────────────────────────────────────┘  │
- *  └─────────────────────────────────────────────────────┘
- *
- * Uses a pure flex layout (no fixed positioning) so the sidebar
- * and content column are always the same height as the viewport.
- * Page content scrolls inside its own flex child, not the window.
- *
- * Also mounts the session-timeout warning system:
- *  - useSessionTimeout polls the JWT expiry every 30 seconds.
- *  - SessionTimeoutWarning renders a floating card when ≤ 2 minutes remain.
  */
 
 import { Outlet } from 'react-router-dom';
-import Sidebar from '@/components/layout/Sidebar';
-import Topbar from '@/components/layout/Topbar';
-import SessionTimeoutWarning from '@/components/SessionTimeoutWarning';
-import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
+import SessionTimeoutWarning from '../SessionTimeoutWarning';
+import { useSessionTimeout } from '../../hooks/useSessionTimeout';
 
 export default function MainLayout() {
   // Monitor the JWT expiry and surface warning state for the floating card.

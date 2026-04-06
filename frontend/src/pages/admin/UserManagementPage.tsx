@@ -15,10 +15,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useUsers } from '@/hooks/useUsers';
-import { UserRole } from '@/types';
-import type { User } from '@/types';
+import { useAuth } from '../../context/AuthContext';
+import { useUsers } from '../../hooks/useUsers';
+import { UserRole } from '../../types';
+import type { User } from '../../types';
 
 // ── Visual config ─────────────────────────────────────────────────────────────
 

@@ -1,55 +1,32 @@
 /**
  * App — application root.
- *
- * Wires together:
- *  - React Query's QueryClientProvider (server-state caching)
- *  - AuthProvider (JWT auth context)
- *  - React Router's BrowserRouter + route tree
- *
- * Route structure:
- *  /                     → redirect to /dashboard
- *  /login                → LoginPage              (public)
- *  /register             → RegisterPage           (public)
- *  /oauth/callback       → OAuthCallbackPage      (public)
- *  /forbidden            → ForbiddenPage          (public)
- *
- *  All routes below require authentication (PrivateRoute) and are
- *  rendered inside MainLayout (sidebar + topbar):
- *  /dashboard            → DashboardPage
- *  /notifications        → NotificationsPage
- *  /profile              → ProfilePage
- *  /bookings             → BookingsPage
- *  /tickets              → TicketsPage
- *  /resources            → ResourcesPage
- *  /admin/users          → UserManagementPage     (ADMIN only, via RoleRoute)
- *
- *  *                     → redirect to /dashboard
  */
 
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { AuthProvider } from '@/context/AuthContext';
-import PrivateRoute from '@/routes/PrivateRoute';
-import RoleRoute from '@/routes/RoleRoute';
-import { UserRole } from '@/types';
+import { AuthProvider } from './context/AuthContext';
+import PrivateRoute from './routes/PrivateRoute';
+import RoleRoute from './routes/RoleRoute';
+import { UserRole } from './types';
 
-import MainLayout from '@/components/layout/MainLayout';
+import MainLayout from './components/layout/MainLayout';
 
-import LoginPage from '@/pages/auth/LoginPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
-import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
-import ForbiddenPage from '@/pages/errors/ForbiddenPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
+import ForbiddenPage from './pages/errors/ForbiddenPage';
 
-import DashboardPage from '@/pages/dashboard/DashboardPage';
-import NotificationsPage from '@/pages/notifications/NotificationsPage';
-import NotificationPreferencesPage from '@/pages/notifications/NotificationPreferencesPage';
-import BookingsPage from '@/pages/bookings/BookingsPage';
-import TicketsPage from '@/pages/tickets/TicketsPage';
-import ResourcesPage from '@/pages/resources/ResourcesPage';
-import UserManagementPage from '@/pages/admin/UserManagementPage';
-import ProfilePage from '@/pages/profile/ProfilePage';
-import LoginHistoryPage from '@/pages/profile/LoginHistoryPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import NotificationsPage from './pages/notifications/NotificationsPage';
+import NotificationPreferencesPage from './pages/notifications/NotificationPreferencesPage';
+import BookingsPage from './pages/bookings/BookingsPage';
+import CreateBookingPage from './pages/bookings/CreateBookingPage';
+import TicketsPage from './pages/tickets/TicketsPage';
+import ResourcesPage from './pages/resources/ResourcesPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
+import ProfilePage from './pages/profile/ProfilePage';
+import LoginHistoryPage from './pages/profile/LoginHistoryPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,38 +43,39 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* ── Public routes (no auth, no layout) ── */}
+            {/* ── Public routes ── */}
             <Route path="/login"     element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 
-            {/* Root redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            {/* ── Protected routes — wrapped in PrivateRoute + MainLayout ── */}
+            {/* ── Protected routes ── */}
             <Route element={<PrivateRoute />}>
               <Route element={<MainLayout />}>
 
-                {/* Available to all authenticated roles */}
                 <Route path="/dashboard"     element={<DashboardPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
                 <Route path="/profile"       element={<ProfilePage />} />
                 <Route path="/login-history" element={<LoginHistoryPage />} />
-                <Route path="/bookings"      element={<BookingsPage />} />
+                
+                {/* Booking Routes */}
+                <Route path="/bookings"        element={<BookingsPage />} />
+                <Route path="/bookings/create" element={<CreateBookingPage />} />
+                
                 <Route path="/tickets"       element={<TicketsPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />
 
-                {/* Admin-only routes — RoleRoute enforces the ADMIN role */}
+                {/* Admin-only routes */}
                 <Route element={<RoleRoute allowedRoles={[UserRole.ADMIN]} />}>
-                  <Route path="/admin/users" element={<UserManagementPage />} />
+                   <Route path="/admin/users" element={<UserManagementPage />} />
                 </Route>
 
               </Route>
             </Route>
 
-            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AuthProvider>
