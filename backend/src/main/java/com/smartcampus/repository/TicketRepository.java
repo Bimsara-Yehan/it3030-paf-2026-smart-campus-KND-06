@@ -3,6 +3,8 @@ package com.smartcampus.repository;
 import com.smartcampus.entity.Ticket;
 import com.smartcampus.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -25,8 +27,13 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     List<Ticket> findAllByDeletedAtIsNull();
 
     /** Finds a specific ticket by ID, ensuring it has not been soft-deleted. */
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"reporter", "assignedTechnician", "assignedBy"})
     Optional<Ticket> findByIdAndDeletedAtIsNull(UUID id);
     
     /** Finds tickets assigned to a specific technician. */
     List<Ticket> findByAssignedTechnicianAndDeletedAtIsNull(User technician);
+
+    /** Finds open or in-progress tickets matching a search keyword for duplicate detection. */
+    @Query("SELECT t FROM Ticket t WHERE t.status IN ('OPEN', 'IN_PROGRESS') AND t.deletedAt IS NULL AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<Ticket> findSimilarActiveTickets(@Param("keyword") String keyword);
 }

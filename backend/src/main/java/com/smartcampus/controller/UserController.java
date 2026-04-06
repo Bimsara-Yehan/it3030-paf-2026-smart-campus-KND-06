@@ -65,6 +65,20 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Users retrieved.", users));
     }
 
+    /**
+     * Returns all active users with a specific role.
+     *
+     * @param role the role to filter by (e.g., TECHNICIAN, ADMIN)
+     * @return a list of {@link UserResponse} DTOs
+     */
+    @GetMapping("/role/{role}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersByRole(@PathVariable UserRole role) {
+        log.debug("GET /users/role/{}", role);
+        List<UserResponse> users = userService.getUsersByRole(role);
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved by role.", users));
+    }
+
     // =========================================================================
     // GET /users/me
     // =========================================================================

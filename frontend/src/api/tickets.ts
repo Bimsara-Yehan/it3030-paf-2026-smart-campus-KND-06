@@ -35,6 +35,13 @@ export const ticketApi = {
     return response.data.data;
   },
 
+  getSimilarTickets: async (query: string): Promise<TicketResponse[]> => {
+    const response = await axiosClient.get<ApiResponse<TicketResponse[]>>(`/tickets/similar`, {
+      params: { query }
+    });
+    return response.data.data;
+  },
+
   assignTicket: async (id: string, technicianId: string): Promise<TicketResponse> => {
     const response = await axiosClient.patch<ApiResponse<TicketResponse>>(
       `/tickets/${id}/assign`,
@@ -68,6 +75,15 @@ export const ticketApi = {
   getComments: async (ticketId: string): Promise<CommentResponse[]> => {
     const response = await axiosClient.get<ApiResponse<CommentResponse[]>>(`/tickets/${ticketId}/comments`);
     return response.data.data;
+  },
+
+  updateComment: async (commentId: string, data: AddCommentRequest): Promise<CommentResponse> => {
+    const response = await axiosClient.put<ApiResponse<CommentResponse>>(`/tickets/comments/${commentId}`, data);
+    return response.data.data;
+  },
+
+  deleteComment: async (commentId: string): Promise<void> => {
+    await axiosClient.delete(`/tickets/comments/${commentId}`);
   },
 
   // ── Attachments ────────────────────────────────────────────────────────────

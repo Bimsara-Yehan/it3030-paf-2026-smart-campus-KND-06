@@ -87,9 +87,9 @@ export interface CreateTicketRequest {
 
 export interface UpdateTicketStatusRequest {
   status: TicketStatus;
-  resolutionNotes?: string;
+  notes?: string;
 }
 
 export interface AddCommentRequest {
-  message: string;
+  content: string;
 }

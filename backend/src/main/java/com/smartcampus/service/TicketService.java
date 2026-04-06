@@ -107,6 +107,19 @@ public class TicketService {
     }
 
     /**
+     * Retrieves open/in-progress tickets matching the keyword for duplicate detection.
+     */
+    @Transactional(readOnly = true)
+    public List<TicketResponse> getSimilarActiveTickets(String keyword) {
+        if (keyword == null || keyword.trim().length() < 3) {
+            return List.of();
+        }
+        return ticketRepository.findSimilarActiveTickets(keyword.trim()).stream()
+                .map(TicketResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Retrieves a single ticket by ID. Enforces ownership or elevated role.
      */
     @Transactional(readOnly = true)
@@ -147,47 +160,86 @@ public class TicketService {
     }
 
     /**
-     * Updates the status of a ticket. Restricted to TECHNICIAN only.
+     * Updates the status of a ticket. Restricted to TECHNICIAN or ADMIN roles,
+     * but REPORTERS can now transition a RESOLVED ticket to CLOSED.
      */
-    @PreAuthorize("hasRole('TECHNICIAN')")
+    @PreAuthorize("hasAnyRole('USER', 'TECHNICIAN', 'ADMIN')")
     @Transactional
     public TicketResponse updateTicketStatus(UUID id, UpdateTicketStatusRequest request) {
         Ticket ticket = getTicketEntity(id);
         User currentUser = getCurrentUser();
-
-        // Ensure technician is only updating their assigned tickets
-        if (ticket.getAssignedTechnician() == null || !ticket.getAssignedTechnician().getId().equals(currentUser.getId())) {
-            throw new ForbiddenException("You can only update tickets assigned to you");
-        }
-
-        ticket.setStatus(request.getStatus());
-        if (request.getStatus() == TicketStatus.RESOLVED) {
-            ticket.setResolvedAt(LocalDateTime.now());
-            ticket.setResolutionNotes(request.getNotes());
-        }
-
-        Ticket updatedTicket = ticketRepository.save(ticket);
-        log.info("Ticket {} status updated to {} by technician {}", id, request.getStatus(), currentUser.getEmail());
         
-        sendNotificationStub(ticket.getReporter(), "The status of your ticket has been updated to " + request.getStatus());
+        // Use roles directly from entity to avoid proxy issues
+        boolean isAdmin = currentUser.getRole() == com.smartcampus.enums.UserRole.ADMIN;
+        boolean isReporter = ticket.getReporter().getId().equals(currentUser.getId());
+        
+        User tech = ticket.getAssignedTechnician();
+        boolean isAssignedTech = tech != null && tech.getId().equals(currentUser.getId());
 
-        return TicketResponse.from(updatedTicket);
+        TicketStatus newStatus = request.getStatus();
+
+        // ── Permission Validation ──
+        if (newStatus == TicketStatus.CLOSED) {
+            if (!isAdmin && !isReporter) {
+                throw new ForbiddenException("Only administrators or the reporter can close this ticket");
+            }
+            if (isReporter && !isAdmin && ticket.getStatus() != TicketStatus.RESOLVED) {
+                throw new ForbiddenException("You can only close the ticket after it has been resolved by a technician");
+            }
+        } else if (newStatus == TicketStatus.REJECTED) {
+            if (!isAdmin) throw new ForbiddenException("Only administrators can reject tickets");
+        } else if (newStatus == TicketStatus.IN_PROGRESS || newStatus == TicketStatus.RESOLVED) {
+            if (!isAdmin && !isAssignedTech) {
+                throw new ForbiddenException("Only the assigned technician or an administrator can update this status");
+            }
+        }
+
+        // ── Apply Status Change ──
+        if (newStatus != null) {
+            ticket.setStatus(newStatus);
+            if (newStatus == TicketStatus.RESOLVED) {
+                ticket.setResolvedAt(LocalDateTime.now());
+                ticket.setResolutionNotes(request.getNotes());
+            } else if (newStatus == TicketStatus.REJECTED) {
+                ticket.setRejectReason(request.getNotes());
+            } else if (newStatus == TicketStatus.CLOSED) {
+                ticket.setClosedAt(LocalDateTime.now());
+            }
+        }
+
+        Ticket savedTicket = ticketRepository.save(ticket);
+        
+        log.info("Ticket {} status updated to {} by {}", id, newStatus, currentUser.getEmail());
+        return TicketResponse.from(savedTicket);
     }
 
     /**
-     * Closes a ticket. Restricted to ADMIN only.
+     * Closes a ticket. Accessible to ADMIN and the original REPORTER.
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
     public TicketResponse closeTicket(UUID id) {
         Ticket ticket = getTicketEntity(id);
+        User currentUser = getCurrentUser();
+
+        boolean isAdmin = currentUser.getRole() == com.smartcampus.enums.UserRole.ADMIN;
+        boolean isReporter = ticket.getReporter().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isReporter) {
+            throw new ForbiddenException("You do not have permission to close this ticket");
+        }
+
+        if (isReporter && !isAdmin && ticket.getStatus() != TicketStatus.RESOLVED) {
+            throw new ForbiddenException("You can only close your ticket after it has been resolved");
+        }
+
         ticket.setStatus(TicketStatus.CLOSED);
         ticket.setClosedAt(LocalDateTime.now());
 
-        Ticket updatedTicket = ticketRepository.save(ticket);
-        log.info("Ticket {} closed by admin", id);
+        ticketRepository.save(ticket);
         
-        return TicketResponse.from(updatedTicket);
+        log.info("Ticket {} closed by {}", id, currentUser.getEmail());
+        return TicketResponse.from(ticket);
     }
 
     /**
@@ -223,6 +275,68 @@ public class TicketService {
         log.info("Comment added to ticket {} by {}", ticketId, currentUser.getEmail());
         
         return CommentResponse.from(savedComment);
+    }
+
+    /**
+     * Updates an existing comment. Only the author can update it.
+     */
+    @Transactional
+    public CommentResponse updateComment(UUID commentId, AddCommentRequest request) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+        
+        User currentUser = getCurrentUser();
+        
+        // Defensive check for author proxy
+        if (comment.getAuthor() == null) {
+            throw new ResourceNotFoundException("Comment author not found");
+        }
+        
+        // Use robust string comparison for IDs
+        if (!comment.getAuthor().getId().toString().equals(currentUser.getId().toString())) {
+            throw new ForbiddenException("You can only edit your own comments");
+        }
+
+        comment.setMessage(request.getContent());
+        comment.setUpdatedAt(LocalDateTime.now());
+        Comment savedComment = commentRepository.save(comment);
+        
+        // Initialize lazy author for DTO mapping
+        savedComment.getAuthor().getName();
+        
+        log.info("Comment {} updated by {}", commentId, currentUser.getEmail());
+        return CommentResponse.from(savedComment);
+    }
+
+    /**
+     * Soft deletes a comment. Only the author or an admin can delete it.
+     */
+    @Transactional
+    public void deleteComment(UUID commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+        
+        User currentUser = getCurrentUser();
+        
+        // Defensive check for author
+        if (comment.getAuthor() == null) {
+            throw new ResourceNotFoundException("Comment author not found");
+        }
+
+        // Project-style role check
+        boolean isAdmin = currentUser.getRole() == com.smartcampus.enums.UserRole.ADMIN;
+
+        // Verify ownership or admin status
+        String authorIdStr = comment.getAuthor().getId().toString();
+        String currentUserIdStr = currentUser.getId().toString();
+
+        if (!isAdmin && !authorIdStr.equals(currentUserIdStr)) {
+            throw new ForbiddenException("You can only delete your own comments");
+        }
+
+        comment.setDeletedAt(LocalDateTime.now());
+        commentRepository.save(comment);
+        log.info("Comment {} soft deleted by {}", commentId, currentUser.getEmail());
     }
 
     /**

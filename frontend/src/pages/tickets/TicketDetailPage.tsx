@@ -4,9 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import CommentSection from '../../components/tickets/CommentSection';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketApi } from '../../api/tickets';
+import { userApi } from '../../api/users';
 import { ticketKeys } from '../../hooks/useTickets';
 import { useToastStore } from '../../store/useToastStore';
 import { calculateSLA } from '../../utils/slaUtils';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +19,15 @@ export default function TicketDetailPage() {
   const { data: ticket, isLoading, error } = useTicket(id!);
   const { data: attachments, isLoading: loadingAttachments } = useTicketAttachments(id!);
   const queryClient = useQueryClient();
+  const [selectedTech, setSelectedTech] = useState<string>('');
+
+  const isAdmin = user?.role === 'ADMIN';
+
+  const { data: technicians } = useQuery({
+    queryKey: ['users', 'technicians'],
+    queryFn: () => userApi.getTechnicians(),
+    enabled: isAdmin
+  });
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -41,15 +53,29 @@ export default function TicketDetailPage() {
   const sla = ticket ? calculateSLA(ticket.priority, ticket.createdAt, ticket.status, ticket.resolvedAt) : null;
 
   const statusMutation = useMutation({
-    mutationFn: ({ status, resolutionNotes }: { status: string; resolutionNotes?: string }) => 
-      ticketApi.updateTicketStatus(id!, { status: status as any, resolutionNotes }),
+    mutationFn: ({ status, notes }: { status: string; notes?: string }) => 
+      ticketApi.updateTicketStatus(id!, { status: status as any, notes }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ticketKeys.detail(id!) });
-      queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
       addToast(`Status updated to ${variables.status.replace('_', ' ')}`, 'success');
     },
     onError: (err: any) => {
       addToast(err.response?.data?.message || 'Failed to update status', 'error');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ticketKeys.detail(id!) });
+      queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
+    }
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (technicianId: string) => ticketApi.assignTicket(id!, technicianId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ticketKeys.detail(id!) });
+      addToast('Technician assigned successfully', 'success');
+      setSelectedTech('');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to assign technician', 'error');
     }
   });
 
@@ -59,8 +85,12 @@ export default function TicketDetailPage() {
       const input = prompt('Enter resolution notes:');
       if (input === null) return;
       notes = input;
+    } else if (status === 'REJECTED') {
+      const input = prompt('Enter rejection reason:');
+      if (input === null) return;
+      notes = input;
     }
-    statusMutation.mutate({ status, resolutionNotes: notes });
+    statusMutation.mutate({ status, notes });
   };
 
   if (isLoading) {
@@ -81,9 +111,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  const isAdmin = user?.role === 'ADMIN';
   const isTechOrAdmin = user?.role === 'TECHNICIAN' || isAdmin;
-  const isReporter = user?.id === ticket.reporterId;
 
   return (
     <div className="p-8 max-w-7xl mx-auto h-full flex flex-col space-y-6">
@@ -123,6 +151,15 @@ export default function TicketDetailPage() {
           
           {/* Action Area */}
           <div className="flex gap-3">
+            {isAdmin && (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
+              <button 
+                onClick={() => handleUpdateStatus('REJECTED')}
+                className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg shadow-sm hover:bg-red-100 text-sm font-medium transition-colors"
+                disabled={statusMutation.isPending}
+              >
+                Reject Ticket
+              </button>
+            )}
             {isTechOrAdmin && ticket.status === 'OPEN' && (
               <button 
                 onClick={() => handleUpdateStatus('IN_PROGRESS')}
@@ -141,15 +178,7 @@ export default function TicketDetailPage() {
                 Resolve Ticket
               </button>
             )}
-            {(isAdmin || isReporter) && ticket.status === 'RESOLVED' && (
-              <button 
-                onClick={() => handleUpdateStatus('CLOSED')}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg shadow-sm hover:bg-black text-sm font-medium transition-colors"
-                disabled={statusMutation.isPending}
-              >
-                Close Ticket
-              </button>
-            )}
+
           </div>
         </div>
       </div>
@@ -238,12 +267,44 @@ export default function TicketDetailPage() {
                 <span className="block text-sm font-medium text-gray-900 mt-1">
                   {ticket.assignedTechnicianName ? ticket.assignedTechnicianName : <span className="text-gray-400 italic">Unassigned</span>}
                 </span>
+                {isAdmin && ticket.status === 'OPEN' && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assign Technician</label>
+                    <div className="flex gap-2">
+                       <select 
+                         value={selectedTech}
+                         onChange={(e) => setSelectedTech(e.target.value)}
+                         className="flex-1 text-sm border border-gray-300 rounded-lg bg-gray-50 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                       >
+                         <option value="">Select...</option>
+                         {technicians?.map(tech => (
+                           <option key={tech.id} value={tech.id}>{tech.fullName}</option>
+                         ))}
+                       </select>
+                       <button 
+                         onClick={() => selectedTech && assignMutation.mutate(selectedTech)}
+                         disabled={!selectedTech || assignMutation.isPending}
+                         className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                       >
+                         {assignMutation.isPending ? '...' : 'Assign'}
+                       </button>
+                    </div>
+                  </div>
+                )}
               </div>
               {ticket.resolutionNotes && (
                 <div>
                   <span className="block text-xs font-semibold text-gray-500 uppercase">Resolution Notes</span>
                   <p className="text-sm text-green-700 bg-green-50 p-3 rounded-lg mt-2 border border-green-100 italic">
                     "{ticket.resolutionNotes}"
+                  </p>
+                </div>
+              )}
+              {ticket.rejectReason && (
+                <div>
+                  <span className="block text-xs font-semibold text-gray-500 uppercase">Rejection Reason</span>
+                  <p className="text-sm text-red-700 bg-red-50 p-3 rounded-lg mt-2 border border-red-100 italic">
+                    "{ticket.rejectReason}"
                   </p>
                 </div>
               )}

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ticketApi } from '../../api/tickets';
 import { ticketKeys } from '../../hooks/useTickets';
 import { useToastStore } from '../../store/useToastStore';
 import type { CreateTicketRequest, TicketCategory, TicketPriority } from '../../types/ticket';
+import { predictTicketDetails, type AIPrediction } from '../../utils/aiPredictor';
+import { useEffect } from 'react';
 
 interface TicketFormProps {
   onSuccess?: () => void;
@@ -20,6 +22,8 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<CreateTicketRequest>({
@@ -63,6 +67,47 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
       addToast(msg, 'error');
     },
   });
+
+  // Watch for AI and Duplicate Detection
+  const title = watch('title');
+  const description = watch('description');
+  const [aiBanner, setAiBanner] = useState<AIPrediction | null>(null);
+  
+  // Debounced search for similar tickets
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (title && title.length >= 5) {
+        setDebouncedQuery(title);
+      } else {
+        setDebouncedQuery('');
+      }
+    }, 600);
+    return () => clearTimeout(handler);
+  }, [title]);
+
+  const { data: similarTickets } = useQuery({
+    queryKey: ['tickets', 'similar', debouncedQuery],
+    queryFn: () => ticketApi.getSimilarTickets(debouncedQuery),
+    enabled: debouncedQuery.length >= 5,
+  });
+
+  // AI Predictor logic
+  useEffect(() => {
+    const combinedText = `${title || ''} ${description || ''}`;
+    if (combinedText.length > 10) {
+      const pred = predictTicketDetails(combinedText);
+      if (pred) {
+        if (pred.category) setValue('category', pred.category);
+        if (pred.priority) setValue('priority', pred.priority);
+        setAiBanner(pred);
+      } else {
+        setAiBanner(null);
+      }
+    } else {
+      setAiBanner(null);
+    }
+  }, [title, description, setValue]);
 
   const onSubmit = (data: CreateTicketRequest) => {
     setApiError(null);
@@ -130,6 +175,17 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
           </div>
         </div>
 
+        {/* AI Predictor Banner */}
+        {aiBanner && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-start gap-3 animate-in fade-in duration-300">
+            <span className="text-xl">🤖</span>
+            <div>
+              <p className="text-sm font-semibold text-purple-800">AI Assistant Auto-Selected Fields</p>
+              <p className="text-xs text-purple-600 mt-0.5">{aiBanner.reason} Category set to <span className="font-bold">{aiBanner.category?.replace('_', ' ')}</span> and Priority to <span className="font-bold">{aiBanner.priority}</span>.</p>
+            </div>
+          </div>
+        )}
+
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Description*</label>
@@ -181,29 +237,54 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
                  </div>
                </div>
              </div>
-             {/* Selected Files List */}
-             {selectedFiles.length > 0 && (
-               <div className="mt-2 space-y-1">
-                 {selectedFiles.map((file, idx) => (
-                   <div key={idx} className="flex items-center justify-between text-xs bg-gray-100 p-1.5 rounded border border-gray-200">
-                     <span className="truncate max-w-[150px]">{file.name}</span>
-                     <button 
-                       type="button"
-                       onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== idx))}
-                       className="text-red-500 hover:text-red-700"
-                     >
-                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                       </svg>
-                     </button>
-                   </div>
-                 ))}
-               </div>
-             )}
-          </div>
-        </div>
+              {/* Selected Files List */}
+              {selectedFiles.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-gray-100 p-1.5 rounded border border-gray-200">
+                      <span className="truncate max-w-[150px]">{file.name}</span>
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== idx))}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+           </div>
+         </div>
 
-        {/* Submit Actions */}
+         {/* Smart Duplicate Detector */}
+         {similarTickets && similarTickets.length > 0 && (
+           <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 animate-in slide-in-from-top-2 duration-300">
+             <div className="flex items-center gap-2 text-orange-800 font-semibold mb-2">
+               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+               </svg>
+               Wait, is your issue already reported?
+             </div>
+             <p className="text-xs text-orange-700 mb-3">We found {similarTickets.length} active ticket(s) that match your report. Submitting a duplicate may slow down resolution time.</p>
+             <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+               {similarTickets.map(ticket => (
+                 <div key={ticket.id} className="bg-white border border-orange-100 rounded-lg p-2 text-sm flex justify-between items-center shadow-sm">
+                   <div className="truncate pr-4 flex-1">
+                     <span className="font-semibold text-gray-800">{ticket.title}</span> 
+                     <span className="text-gray-500 text-xs ml-2">({ticket.status})</span>
+                   </div>
+                   <span className="px-2 py-1 bg-orange-100 text-orange-800 text-[10px] font-bold rounded-full whitespace-nowrap">SIMILAR</span>
+                 </div>
+               ))}
+             </div>
+             <div className="mt-3 text-xs text-orange-600 font-medium">Please verify before clicking Submit!</div>
+           </div>
+         )}
+
+         {/* Submit Actions */}
         <div className="pt-4 flex items-center justify-end space-x-3 border-t border-gray-100">
           {onCancel && (
             <button

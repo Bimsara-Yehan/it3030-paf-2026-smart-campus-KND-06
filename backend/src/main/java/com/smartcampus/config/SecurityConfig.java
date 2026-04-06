@@ -193,6 +193,11 @@ public class SecurityConfig {
                 // already marked .permitAll() above — those never hit this entry point.
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"status\":403,\"error\":\"Forbidden\",\"message\":\"You do not have permission to perform this action.\"}");
+                        })
                 )
 
                 // Register the DaoAuthenticationProvider so Spring Security knows

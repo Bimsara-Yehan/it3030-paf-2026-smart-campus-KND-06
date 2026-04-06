@@ -4,6 +4,7 @@ import com.smartcampus.dto.request.AddCommentRequest;
 import com.smartcampus.dto.request.CreateTicketRequest;
 import com.smartcampus.dto.request.UpdateTicketStatusRequest;
 import com.smartcampus.dto.response.ApiResponse;
+import com.smartcampus.dto.response.AttachmentResponse;
 import com.smartcampus.dto.response.CommentResponse;
 import com.smartcampus.dto.response.TicketResponse;
 import com.smartcampus.service.TicketService;
@@ -56,6 +57,12 @@ public class TicketController {
         return ResponseEntity.ok(ApiResponse.success("Your tickets retrieved", tickets));
     }
 
+    @GetMapping("/similar")
+    public ResponseEntity<ApiResponse<List<TicketResponse>>> getSimilarTickets(@RequestParam("query") String query) {
+        List<TicketResponse> tickets = ticketService.getSimilarActiveTickets(query);
+        return ResponseEntity.ok(ApiResponse.success("Similar active tickets retrieved", tickets));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TicketResponse>> getTicket(@PathVariable UUID id) {
         TicketResponse ticket = ticketService.getTicketById(id);
@@ -105,6 +112,20 @@ public class TicketController {
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(@PathVariable UUID id) {
         List<CommentResponse> comments = ticketService.getComments(id);
         return ResponseEntity.ok(ApiResponse.success("Comments retrieved", comments));
+    }
+
+    @PutMapping("/comments/{commentId}")
+    public ResponseEntity<ApiResponse<CommentResponse>> updateComment(
+            @PathVariable UUID commentId,
+            @Valid @RequestBody AddCommentRequest request) {
+        CommentResponse comment = ticketService.updateComment(commentId, request);
+        return ResponseEntity.ok(ApiResponse.success("Comment updated successfully", comment));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable UUID commentId) {
+        ticketService.deleteComment(commentId);
+        return ResponseEntity.ok(ApiResponse.success("Comment deleted successfully"));
     }
 
     // ── Attachment Endpoints (Stubs for current phase) ────────────────────────

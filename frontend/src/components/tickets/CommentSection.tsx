@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTicketComments, ticketKeys } from '../../hooks/useTickets';
 import { ticketApi } from '../../api/tickets';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CommentSection({ ticketId }: { ticketId: string }) {
   const queryClient = useQueryClient();
   const { data: comments, isLoading } = useTicketComments(ticketId);
   const [newComment, setNewComment] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editedContent, setEditedContent] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
 
   const mutation = useMutation({
-    mutationFn: (message: string) => ticketApi.addComment(ticketId, { message }),
+    mutationFn: (message: string) => ticketApi.addComment(ticketId, { content: message }),
     onSuccess: () => {
       setNewComment('');
       queryClient.invalidateQueries({ queryKey: ticketKeys.comments(ticketId) });
@@ -18,6 +22,28 @@ export default function CommentSection({ ticketId }: { ticketId: string }) {
     onError: (error: any) => {
       setErrorMsg(error.response?.data?.message || 'Failed to post comment.');
     },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ commentId, content }: { commentId: string; content: string }) => 
+      ticketApi.updateComment(commentId, { content }),
+    onSuccess: () => {
+      setEditingCommentId(null);
+      queryClient.invalidateQueries({ queryKey: ticketKeys.comments(ticketId) });
+    },
+    onError: (error: any) => {
+      setErrorMsg(error.response?.data?.message || 'Failed to update comment.');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (commentId: string) => ticketApi.deleteComment(commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ticketKeys.comments(ticketId) });
+    },
+    onError: (error: any) => {
+      setErrorMsg(error.response?.data?.message || 'Failed to delete comment.');
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,18 +71,78 @@ export default function CommentSection({ ticketId }: { ticketId: string }) {
           ) : (
             <div className="space-y-6">
               {comments?.map((comment) => (
-                <div key={comment.id} className="flex gap-4">
+                <div key={comment.id} className="flex gap-4 group">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <span className="text-blue-700 font-bold uppercase">{comment.authorName.charAt(0)}</span>
                   </div>
-                  <div className="flex-1 bg-gray-50 rounded-2xl rounded-tl-none p-4 border border-gray-100">
+                  <div className="flex-1 bg-gray-50 rounded-2xl rounded-tl-none p-4 border border-gray-100 relative">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="font-semibold text-sm text-gray-900">{comment.authorName}</span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(comment.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm text-gray-900">{comment.authorName}</span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(comment.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+                      
+                      {/* Action Buttons (visible on hover for owners) */}
+                      {currentUser?.id === comment.authorId && editingCommentId !== comment.id && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              setEditingCommentId(comment.id);
+                              setEditedContent(comment.message);
+                            }}
+                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Edit"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this comment?')) {
+                                deleteMutation.mutate(comment.id);
+                              }
+                            }}
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.message}</p>
+
+                    {editingCommentId === comment.id ? (
+                      <div className="mt-2">
+                        <textarea
+                          rows={2}
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          className="w-full p-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                        />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button 
+                            onClick={() => setEditingCommentId(null)}
+                            className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700 font-medium"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={() => updateMutation.mutate({ commentId: comment.id, content: editedContent })}
+                            disabled={updateMutation.isPending || !editedContent.trim()}
+                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium disabled:opacity-50"
+                          >
+                            {updateMutation.isPending ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.message}</p>
+                    )}
                   </div>
                 </div>
               ))}

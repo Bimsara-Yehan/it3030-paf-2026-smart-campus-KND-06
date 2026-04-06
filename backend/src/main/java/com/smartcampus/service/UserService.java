@@ -70,6 +70,21 @@ public class UserService {
     }
 
     /**
+     * Returns all active users with a specific role.
+     *
+     * @param role the role to filter by
+     * @return a list of {@link UserResponse} DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponse> getUsersByRole(UserRole role) {
+        log.debug("Admin: fetching active users with role: {}", role);
+        return userRepository.findAllByRoleAndDeletedAtIsNull(role)
+                .stream()
+                .map(UserResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Returns the profile of a specific user by their UUID.
      *
      * <p>Admin-only — use {@link #getCurrentUserProfile()} for the authenticated
