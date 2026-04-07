@@ -34,6 +34,7 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     List<Ticket> findByAssignedTechnicianAndDeletedAtIsNull(User technician);
 
     /** Finds open or in-progress tickets matching a search keyword for duplicate detection. */
-    @Query("SELECT t FROM Ticket t WHERE t.status IN ('OPEN', 'IN_PROGRESS') AND t.deletedAt IS NULL AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"reporter", "assignedTechnician", "assignedBy"})
+    @Query("SELECT t FROM Ticket t WHERE t.status IN (com.smartcampus.enums.TicketStatus.OPEN, com.smartcampus.enums.TicketStatus.IN_PROGRESS) AND t.deletedAt IS NULL AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Ticket> findSimilarActiveTickets(@Param("keyword") String keyword);
 }

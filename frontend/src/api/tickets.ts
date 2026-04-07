@@ -36,7 +36,7 @@ export const ticketApi = {
   },
 
   getSimilarTickets: async (query: string): Promise<TicketResponse[]> => {
-    const response = await axiosClient.get<ApiResponse<TicketResponse[]>>(`/tickets/similar`, {
+    const response = await axiosClient.get<ApiResponse<TicketResponse[]>>(`/tickets/search/similar`, {
       params: { query }
     });
     return response.data.data;

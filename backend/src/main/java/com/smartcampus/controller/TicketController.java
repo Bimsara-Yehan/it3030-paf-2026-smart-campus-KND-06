@@ -57,7 +57,7 @@ public class TicketController {
         return ResponseEntity.ok(ApiResponse.success("Your tickets retrieved", tickets));
     }
 
-    @GetMapping("/similar")
+    @GetMapping("/search/similar")
     public ResponseEntity<ApiResponse<List<TicketResponse>>> getSimilarTickets(@RequestParam("query") String query) {
         List<TicketResponse> tickets = ticketService.getSimilarActiveTickets(query);
         return ResponseEntity.ok(ApiResponse.success("Similar active tickets retrieved", tickets));

@@ -18,6 +18,8 @@ import com.smartcampus.repository.CommentRepository;
 import com.smartcampus.repository.TicketAttachmentRepository;
 import com.smartcampus.repository.TicketRepository;
 import com.smartcampus.repository.UserRepository;
+import com.smartcampus.service.NotificationService;
+import com.smartcampus.enums.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,6 +56,7 @@ public class TicketService {
     private final CommentRepository commentRepository;
     private final TicketAttachmentRepository attachmentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // ── Ticket Operations ─────────────────────────────────────────────────────
 
@@ -78,8 +81,7 @@ public class TicketService {
         Ticket savedTicket = ticketRepository.save(ticket);
         log.info("Ticket created: {} by user {}", savedTicket.getId(), currentUser.getEmail());
         
-        // Placeholder for NotificationService call
-        sendNotificationStub(currentUser, "Your ticket has been created successfully.");
+        notificationService.sendNotification(currentUser, "Your ticket has been created successfully.", NotificationType.TICKET_ASSIGNED);
         
         return TicketResponse.from(savedTicket);
     }
@@ -154,7 +156,7 @@ public class TicketService {
         Ticket updatedTicket = ticketRepository.save(ticket);
         log.info("Ticket {} assigned to technician {}", id, technician.getEmail());
         
-        sendNotificationStub(technician, "A new ticket has been assigned to you.");
+        notificationService.sendNotification(technician, "A new ticket has been assigned to you.", NotificationType.TICKET_ASSIGNED);
         
         return TicketResponse.from(updatedTicket);
     }
@@ -200,6 +202,7 @@ public class TicketService {
             if (newStatus == TicketStatus.RESOLVED) {
                 ticket.setResolvedAt(LocalDateTime.now());
                 ticket.setResolutionNotes(request.getNotes());
+                notificationService.sendNotification(ticket.getReporter(), "Your ticket has been resolved", NotificationType.TICKET_STATUS_CHANGED);
             } else if (newStatus == TicketStatus.REJECTED) {
                 ticket.setRejectReason(request.getNotes());
             } else if (newStatus == TicketStatus.CLOSED) {
@@ -273,6 +276,11 @@ public class TicketService {
 
         Comment savedComment = commentRepository.save(comment);
         log.info("Comment added to ticket {} by {}", ticketId, currentUser.getEmail());
+        
+        User reporter = ticket.getReporter();
+        if (reporter != null && !reporter.getId().equals(currentUser.getId())) {
+            notificationService.sendNotification(reporter, "New comment added to your ticket.", NotificationType.NEW_COMMENT);
+        }
         
         return CommentResponse.from(savedComment);
     }
@@ -385,14 +393,6 @@ public class TicketService {
         if (!isAdmin && !isTechnician && !isReporter) {
             throw new ForbiddenException("You do not have permission to access this ticket");
         }
-    }
-
-    /**
-     * Placeholder stub for NotificationService to ensure future compatibility.
-     */
-    private void sendNotificationStub(User user, String message) {
-        log.warn("[STUB] Notification for {}: {}", user.getEmail(), message);
-        // This will be replaced with member4's NotificationService.sendNotification(user, message);
     }
 
     /**
