@@ -10,21 +10,19 @@
 
 spring:
   profiles:
-    active: dev                         # Default active profile; override with SPRING_PROFILES_ACTIVE
-
-  # ── DataSource ─────────────────────────────────────────────────────────────
+    active: dev
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartcampus
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://ep-lingering-tree-a1co0zkb.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+    username: neondb_owner
+    password: ${DB_PASSWORD:npg_7XSmnBF9rCyY}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: SmartCampusPool
-      maximum-pool-size: 10             # Max concurrent DB connections
-      minimum-idle: 2                   # Keep at least 2 connections warm
-      connection-timeout: 30000         # 30 s — fail fast rather than hang
-      idle-timeout: 600000              # 10 min — reclaim idle connections
-      max-lifetime: 1800000             # 30 min — rotate connections proactively
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000            # 30 min — rotate connections proactively
 
   # ── JPA / Hibernate ────────────────────────────────────────────────────────
   jpa:
