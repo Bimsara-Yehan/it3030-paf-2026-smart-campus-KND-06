@@ -13,8 +13,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import axiosClient from '@/api/axiosClient';
-import type { ApiResponse, Notification } from '@/types';
+import axiosClient from '../api/axiosClient';
+import type { ApiResponse, Notification } from '../types';
 
 // ── Return type ───────────────────────────────────────────────────────────────
 

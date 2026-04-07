@@ -24,10 +24,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useAuth } from '@/context/AuthContext';
-import axiosClient from '@/api/axiosClient';
-import { UserRole } from '@/types';
-import type { User } from '@/types';
+import { useAuth } from '../../context/AuthContext';
+import axiosClient from '../../api/axiosClient';
+import { UserRole } from '../../types';
+import type { User } from '../../types';
 
 // ── Role display helpers ───────────────────────────────────────────────────────
 
@@ -77,8 +77,11 @@ export default function DashboardPage() {
       .then((res) => {
         if (!cancelled) setUsers(res.data.data ?? []);
       })
-      .catch(() => {
-        if (!cancelled) setError('Could not load user statistics. Please refresh the page.');
+      .catch((err) => {
+        if (!cancelled) {
+          const msg = err.response?.data?.message || 'Could not load user statistics. Please refresh the page.';
+          setError(msg);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

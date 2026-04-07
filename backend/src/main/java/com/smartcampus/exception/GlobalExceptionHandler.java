@@ -214,11 +214,10 @@ public class GlobalExceptionHandler {
      * @return 500 Internal Server Error with a generic error body
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(
+    public ResponseEntity<Map<String, Object>> handleAllUncaughtExceptions(
             Exception ex, HttpServletRequest request) {
 
-        // Log the full stack trace so developers can diagnose the root cause
-        log.error("Unhandled exception on [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.error("Unhandled exception on [{}]:", request.getRequestURI(), ex);
 
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
