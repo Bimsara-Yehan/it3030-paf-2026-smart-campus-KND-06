@@ -1,5 +1,7 @@
 package com.smartcampus.entity;
 
+import com.smartcampus.enums.ResourceStatus;
+import com.smartcampus.enums.ResourceType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,8 +28,9 @@ public class Resource {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String type; // LECTURE_HALL | LAB | MEETING_ROOM | EQUIPMENT
+    private ResourceType type;
 
     @Column
     private Integer capacity;
@@ -38,9 +41,10 @@ public class Resource {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
-    private String status = "ACTIVE"; // ACTIVE | OUT_OF_SERVICE
+    private ResourceStatus status = ResourceStatus.AVAILABLE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

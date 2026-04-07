@@ -2,10 +2,12 @@ package com.smartcampus.service;
 
 import com.smartcampus.dto.request.CreateResourceRequest;
 import com.smartcampus.dto.request.UpdateResourceRequest;
+import com.smartcampus.dto.response.ResourceAvailabilityResponse;
 import com.smartcampus.dto.response.ResourceResponse;
 import com.smartcampus.entity.Resource;
 import com.smartcampus.entity.User;
-import com.smartcampus.mapper.ResourceMapper;
+import com.smartcampus.enums.ResourceStatus;
+import com.smartcampus.enums.ResourceType;
 import com.smartcampus.repository.ResourceRepository;
 import com.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,43 +27,95 @@ public class ResourceService {
 
     private final ResourceRepository resourceRepository;
     private final UserRepository userRepository;
-    private final ResourceMapper resourceMapper;
 
     @Transactional(readOnly = true)
-    public List<ResourceResponse> searchResources(String type, Integer minCapacity, String location) {
-        log.info("Searching resources - type: {}, minCapacity: {}, location: {}", type, minCapacity, location);
-        List<Resource> resources = resourceRepository.searchResources(type, minCapacity, location);
-        return resources.stream()
-                .map(resourceMapper::toDto)
+    public List<ResourceResponse> getAllResources() {
+        return resourceRepository.findByDeletedAtIsNull().stream()
+                .map(ResourceResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResourceResponse> searchResources(String typeStr, Integer minCapacity, String location) {
+        ResourceType type = null;
+        if (typeStr != null && !typeStr.isEmpty()) {
+            try { type = ResourceType.valueOf(typeStr.toUpperCase()); } catch (Exception ignored) {}
+        }
+        
+        List<Resource> resources = resourceRepository.searchResources(
+                type != null ? type.name() : null, 
+                minCapacity, 
+                location
+        );
+        return resources.stream().map(ResourceResponse::from).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResourceResponse> smartSearch(String naturalQuery) {
+        log.info("Executing AI Smart Search for query: {}", naturalQuery);
+        String q = naturalQuery.toLowerCase();
+        
+        // --- The Smart Search Lexical Parser ---
+        ResourceType detectedType = null;
+        if (q.contains("lab")) detectedType = ResourceType.LAB;
+        else if (q.contains("hall") || q.contains("theatre")) detectedType = ResourceType.ROOM; // Mapped ROOM since LECTURE_HALL was genericized
+        else if (q.contains("equipment") || q.contains("projector")) detectedType = ResourceType.EQUIPMENT;
+        else if (q.contains("vehicle") || q.contains("van")) detectedType = ResourceType.VEHICLE;
+        else if (q.contains("sport") || q.contains("court")) detectedType = ResourceType.SPORTS_FACILITY;
+
+        Integer detectedCapacity = null;
+        String[] words = q.split(" ");
+        for (String word : words) {
+            if (word.matches("\\d+")) {
+                detectedCapacity = Integer.parseInt(word);
+                break;
+            }
+        }
+
+        String detectedLocation = null;
+        if (q.contains("north")) detectedLocation = "North Wing";
+        else if (q.contains("south")) detectedLocation = "South Wing";
+
+        log.info("Parsed Intent Config - Type: {}, MinCap: {}, Loc: {}", detectedType, detectedCapacity, detectedLocation);
+
+        List<Resource> resources = resourceRepository.searchResources(
+                detectedType != null ? detectedType.name() : null,
+                detectedCapacity,
+                detectedLocation
+        );
+        return resources.stream().map(ResourceResponse::from).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ResourceResponse getResourceById(UUID id) {
         Resource resource = resourceRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
-        return resourceMapper.toDto(resource);
+        return ResourceResponse.from(resource);
     }
 
     @Transactional
     public ResourceResponse createResource(CreateResourceRequest request, UUID adminUserId) {
         log.info("Creating new resource: {}", request.getName());
-
-        // Validate the user trying to create exists (Read-only as per Guideline 2)
         User adminUser = userRepository.findById(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin User not found"));
 
-        Resource newResource = resourceMapper.toEntity(request);
-        newResource.setCreatedBy(adminUser);
+        Resource newResource = Resource.builder()
+                .name(request.getName())
+                .type(request.getType())
+                .capacity(request.getCapacity())
+                .location(request.getLocation())
+                .description(request.getDescription())
+                .status(ResourceStatus.AVAILABLE)
+                .createdBy(adminUser)
+                .build();
         
         Resource savedResource = resourceRepository.save(newResource);
-        return resourceMapper.toDto(savedResource);
+        return ResourceResponse.from(savedResource);
     }
 
     @Transactional
     public ResourceResponse updateResource(UUID id, UpdateResourceRequest request) {
         log.info("Updating resource ID: {}", id);
-        
         Resource existing = resourceRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
 
@@ -73,20 +127,34 @@ public class ResourceService {
         if (request.getStatus() != null) existing.setStatus(request.getStatus());
 
         Resource updatedResource = resourceRepository.save(existing);
-        return resourceMapper.toDto(updatedResource);
+        return ResourceResponse.from(updatedResource);
     }
 
     @Transactional
     public void deleteResource(UUID id) {
         log.info("Soft-deleting resource ID: {}", id);
-        
         Resource existing = resourceRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
-
-        // Soft Delete implementation
         existing.setDeletedAt(LocalDateTime.now());
-        existing.setStatus("OUT_OF_SERVICE");
-        
+        existing.setStatus(ResourceStatus.RETIRED);
         resourceRepository.save(existing);
+    }
+
+    @Transactional
+    public ResourceResponse changeResourceStatus(UUID id, ResourceStatus newStatus) {
+        log.info("Changing status of resource ID: {} to {}", id, newStatus);
+        Resource existing = resourceRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new RuntimeException("Resource not found"));
+        existing.setStatus(newStatus);
+        return ResourceResponse.from(resourceRepository.save(existing));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResourceAvailabilityResponse> getResourceAvailability(UUID id) {
+        Resource existing = resourceRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new RuntimeException("Resource not found"));
+        return existing.getAvailabilities().stream()
+                .map(ResourceAvailabilityResponse::from)
+                .collect(Collectors.toList());
     }
 }
