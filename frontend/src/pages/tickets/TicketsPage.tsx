@@ -64,15 +64,17 @@ export default function TicketsPage() {
             {user?.role === 'USER' ? 'Track issues you have reported across campus.' : 'Manage and resolve campus maintenance incidents.'}
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transition-all focus:ring-4 focus:ring-blue-100 active:scale-95"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="hidden sm:inline">Submit New </span>Ticket
-        </button>
+        {user?.role !== 'ADMIN' && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transition-all focus:ring-4 focus:ring-blue-100 active:scale-95"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="hidden sm:inline">Submit New </span>Ticket
+          </button>
+        )}
       </div>
 
       {/* Filter and View Toggle Bar */}

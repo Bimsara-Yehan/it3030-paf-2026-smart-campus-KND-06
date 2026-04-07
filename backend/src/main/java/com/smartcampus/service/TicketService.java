@@ -61,9 +61,11 @@ public class TicketService {
     // ── Ticket Operations ─────────────────────────────────────────────────────
 
     /**
-     * Creates a new ticket. Available to all authenticated users.
+     * Creates a new ticket. Available only to USER and TECHNICIAN roles.
+     * ADMIN users cannot create tickets — they can only manage and assign tickets.
      */
     @Transactional
+    @PreAuthorize("hasAnyRole('USER', 'TECHNICIAN')")
     public TicketResponse createTicket(CreateTicketRequest request) {
         User currentUser = getCurrentUser();
         

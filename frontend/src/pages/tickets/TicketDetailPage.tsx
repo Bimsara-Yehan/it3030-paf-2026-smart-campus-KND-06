@@ -24,9 +24,9 @@ export default function TicketDetailPage() {
   const isAdmin = user?.role === 'ADMIN';
 
   const { data: technicians } = useQuery({
-    queryKey: ['users', 'technicians'],
-    queryFn: () => userApi.getTechnicians(),
-    enabled: isAdmin
+    queryKey: ['users', 'technicians', ticket?.category],
+    queryFn: () => userApi.getTechnicians(ticket?.category as any),
+    enabled: isAdmin && !!ticket?.category
   });
 
   const getStatusBadgeColor = (status: string) => {
