@@ -108,42 +108,45 @@ export default function TicketsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-full flex flex-col space-y-8">
+    <div className="min-h-screen p-8 bg-gray-50">
+      <div className="max-w-7xl mx-auto space-y-8">
       {/* ════════════════════════════════════════════════════════════════════
-          INCIDENT TICKETING SUMMARY CARD
+          INCIDENT TICKETING SUMMARY CARD (ADMIN/TECH ONLY)
       ════════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-md text-white animate-in slide-in-from-top duration-500">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <p className="text-sm font-medium text-blue-100">Incident Ticketing Summary</p>
-            <h2 className="mt-2 text-3xl font-bold">Active Campus Issues</h2>
+      {isElevated && (
+        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-md text-white animate-in slide-in-from-top duration-500">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-sm font-medium text-blue-100">Incident Ticketing Summary</p>
+              <h2 className="mt-2 text-3xl font-bold">Active Campus Issues</h2>
+            </div>
+            <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
           </div>
-          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+          <div className="grid grid-cols-2 gap-8 md:flex md:items-center md:gap-12">
+            <div className="flex flex-col">
+              <span className="text-4xl font-bold">{isLoading ? '...' : openTicketsCount}</span>
+              <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400"></span> Open
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-4xl font-bold">{isLoading ? '...' : inProgressCount}</span>
+              <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400"></span> In Progress
+              </span>
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-8 md:flex md:items-center md:gap-12">
-          <div className="flex flex-col">
-            <span className="text-4xl font-bold">{isLoading ? '...' : openTicketsCount}</span>
-            <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400"></span> Open
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-4xl font-bold">{isLoading ? '...' : inProgressCount}</span>
-            <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400"></span> In Progress
-            </span>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════════════════
-          ANALYTICS CHARTS (Category & Volume)
+          ANALYTICS CHARTS (Category & Volume) (ADMIN/TECH ONLY)
       ════════════════════════════════════════════════════════════════════ */}
-      {!isLoading && tickets && tickets.length > 0 && (
+      {isElevated && !isLoading && tickets && tickets.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom duration-500">
           {/* Tickets by Category */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
@@ -204,94 +207,95 @@ export default function TicketsPage() {
       {/* ════════════════════════════════════════════════════════════════════
           TICKETS LIST & MANAGEMENT
       ════════════════════════════════════════════════════════════════════ */}
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Manage Tickets</h2>
-          <p className="text-gray-500 mt-1 text-sm">
-            {user?.role === 'USER' ? 'View and track all your support requests.' : 'Review, assign, and resolve tickets.'}
-          </p>
-        </div>
-        {user?.role !== 'ADMIN' && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transition-all focus:ring-4 focus:ring-blue-100 active:scale-95"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="hidden sm:inline">Submit New </span>Ticket
-          </button>
-        )}
-      </div>
-
-      {/* Filter and View Toggle Bar */}
-      <div className="glass p-4 rounded-2xl shadow-sm border border-white/40 flex flex-col sm:flex-row justify-between gap-4 sticky top-4 z-10 animate-in slide-in-from-bottom duration-500">
-        <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0">
-          {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === status
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {status.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by ID or title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all bg-gray-50/50"
-            />
+      <div className="space-y-4">
+        {/* Header section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Manage Tickets</h2>
+            <p className="text-gray-500 mt-1 text-sm">
+              {user?.role === 'USER' ? 'View and track all your support requests.' : 'Review, assign, and resolve tickets.'}
+            </p>
           </div>
-          
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
-          >
-            <option value="NEWEST">Latest First</option>
-            <option value="PRIORITY">Highest Priority</option>
-            <option value="STATUS">By Status</option>
-          </select>
-
-          {isElevated && (
-            <div className="flex bg-gray-100 p-1 rounded-xl self-start sm:self-center shrink-0 shadow-inner">
-              <button
-                onClick={() => setViewMode('LIST')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                  viewMode === 'LIST' ? 'bg-white shadow-sm text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('BOARD')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                  viewMode === 'BOARD' ? 'bg-white shadow-sm text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Board
-              </button>
-            </div>
+          {user?.role !== 'ADMIN' && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transition-all focus:ring-4 focus:ring-blue-100 active:scale-95"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:inline">Submit New </span>Ticket
+            </button>
           )}
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+        {/* Filter and View Toggle Bar */}
+        <div className="glass p-4 rounded-2xl shadow-sm border border-white/40 flex flex-col sm:flex-row justify-between gap-4 animate-in slide-in-from-bottom duration-500">
+          <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0">
+            {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  filterStatus === status
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {status.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by ID or title..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all bg-gray-50/50"
+              />
+            </div>
+            
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
+            >
+              <option value="NEWEST">Latest First</option>
+              <option value="PRIORITY">Highest Priority</option>
+              <option value="STATUS">By Status</option>
+            </select>
+
+            {isElevated && (
+              <div className="flex bg-gray-100 p-1 rounded-xl self-start sm:self-center shrink-0 shadow-inner">
+                <button
+                  onClick={() => setViewMode('LIST')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                    viewMode === 'LIST' ? 'bg-white shadow-sm text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode('BOARD')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                    viewMode === 'BOARD' ? 'bg-white shadow-sm text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Board
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8 space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -385,6 +389,7 @@ export default function TicketsPage() {
           </div>
         )}
       </div>
+      </div>
 
       {/* Modal for creating a ticket */}
       {isModalOpen && (
@@ -405,6 +410,7 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
