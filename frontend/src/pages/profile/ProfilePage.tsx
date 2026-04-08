@@ -4,10 +4,8 @@
  * Sections:
  *  1. Profile card  — avatar, name, email, role badge, member-since, status
  *  2. Account info  — login method, account creation date
- *  3. Edit profile  — fullName editable; email read-only; PATCH /users/{id}
- *                     (endpoint not yet implemented → read-only with coming-soon note)
+ *  3. Edit profile  — fullName editable; email read-only; PATCH /users/profile
  *  4. Change password — POST /auth/change-password
- *                       (endpoint not yet implemented → coming-soon placeholder)
  *                       Hidden for Google-OAuth accounts that have no password.
  *  5. Danger zone   — "Sign out of all devices" calls POST /auth/logout
  *                     then clears the AuthContext and redirects to /login.
@@ -127,12 +125,47 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   // ── Section: Edit Profile ─────────────────────────────────────────────────
-  // PATCH /users/{id} with { fullName } is not yet implemented on the backend.
-  // Fields are shown read-only with a "coming soon" note.
+  const [profileName, setProfileName]       = useState(user?.fullName ?? '');
+  const [profileSaving, setProfileSaving]   = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [profileError, setProfileError]     = useState<string | null>(null);
+
+  const handleSaveProfile = async () => {
+    if (!profileName.trim()) { setProfileError('Full name is required.'); return; }
+    setProfileSaving(true); setProfileError(null); setProfileSuccess(null);
+    try {
+      await axiosClient.patch('/users/profile', { fullName: profileName.trim() });
+      setProfileSuccess('Profile updated successfully.');
+    } catch (err: any) {
+      setProfileError(err.response?.data?.message ?? 'Failed to update profile.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   // ── Section: Change Password ──────────────────────────────────────────────
-  // POST /auth/change-password is not yet implemented on the backend.
-  // Section is shown as a coming-soon placeholder.
+  const [currentPw, setCurrentPw]   = useState('');
+  const [newPw, setNewPw]           = useState('');
+  const [confirmPw, setConfirmPw]   = useState('');
+  const [pwSaving, setPwSaving]     = useState(false);
+  const [pwSuccess, setPwSuccess]   = useState<string | null>(null);
+  const [pwError, setPwError]       = useState<string | null>(null);
+
+  const handleChangePassword = async () => {
+    if (!currentPw || !newPw || !confirmPw) { setPwError('All fields are required.'); return; }
+    if (newPw.length < 6) { setPwError('New password must be at least 6 characters.'); return; }
+    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+    setPwSaving(true); setPwError(null); setPwSuccess(null);
+    try {
+      await axiosClient.post('/auth/change-password', { currentPassword: currentPw, newPassword: newPw });
+      setPwSuccess('Password changed successfully.');
+      setCurrentPw(''); setNewPw(''); setConfirmPw('');
+    } catch (err: any) {
+      setPwError(err.response?.data?.message ?? 'Failed to change password.');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   // ── Section: Danger Zone ──────────────────────────────────────────────────
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -248,24 +281,20 @@ export default function ProfilePage() {
           </div>
         </Section>
 
-        {/* ══ 3. Edit profile (coming soon) ════════════════════════════════════ */}
+        {/* ══ 3. Edit profile ══════════════════════════════════════════════════ */}
         <Section title="Edit Profile">
-          {/* Coming-soon notice */}
-          <div className="mb-5 flex items-start gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-            <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zm-9-3.75h.008v.008H12V8.25z" />
-            </svg>
-            <p className="text-xs text-blue-700">
-              Profile editing is coming soon. Contact your administrator to update your name.
-            </p>
-          </div>
-
+          {profileSuccess && (
+            <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{profileSuccess}</div>
+          )}
+          {profileError && (
+            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{profileError}</div>
+          )}
           <div className="space-y-4">
             <InputField
               id="fullName"
               label="Full Name"
-              value={user.fullName}
-              readOnly
+              value={profileName}
+              onChange={setProfileName}
             />
             <InputField
               id="email"
@@ -275,24 +304,63 @@ export default function ProfilePage() {
               type="email"
             />
           </div>
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              disabled={profileSaving}
+              onClick={handleSaveProfile}
+              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            >
+              {profileSaving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
         </Section>
 
-        {/* ══ 4. Change password (coming soon — hidden for OAuth accounts) ═════ */}
+        {/* ══ 4. Change password — hidden for OAuth accounts ═══════════════════ */}
         {!isOAuthUser && (
           <Section title="Change Password">
-            <div className="flex items-start gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zm-9-3.75h.008v.008H12V8.25z" />
-              </svg>
-              <p className="text-xs text-blue-700">
-                Password change is coming soon. You will be able to update your password here once the feature is available.
-              </p>
+            {pwSuccess && (
+              <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{pwSuccess}</div>
+            )}
+            {pwError && (
+              <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{pwError}</div>
+            )}
+            <div className="space-y-4">
+              <InputField
+                id="currentPassword"
+                label="Current Password"
+                value={currentPw}
+                onChange={setCurrentPw}
+                type="password"
+                autoComplete="current-password"
+              />
+              <InputField
+                id="newPassword"
+                label="New Password"
+                value={newPw}
+                onChange={setNewPw}
+                type="password"
+                autoComplete="new-password"
+              />
+              <InputField
+                id="confirmPassword"
+                label="Confirm New Password"
+                value={confirmPw}
+                onChange={setConfirmPw}
+                type="password"
+                autoComplete="new-password"
+                error={confirmPw && newPw !== confirmPw ? 'Passwords do not match.' : undefined}
+              />
             </div>
-
-            <div className="mt-4 space-y-4 opacity-50 pointer-events-none select-none">
-              <InputField id="currentPassword" label="Current Password" value="" type="password" readOnly />
-              <InputField id="newPassword"     label="New Password"     value="" type="password" readOnly />
-              <InputField id="confirmPassword" label="Confirm Password" value="" type="password" readOnly />
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                disabled={pwSaving}
+                onClick={handleChangePassword}
+                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+              >
+                {pwSaving ? 'Changing…' : 'Change Password'}
+              </button>
             </div>
           </Section>
         )}

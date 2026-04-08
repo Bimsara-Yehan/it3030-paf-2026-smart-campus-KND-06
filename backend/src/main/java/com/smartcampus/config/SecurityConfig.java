@@ -74,7 +74,11 @@ public class SecurityConfig {
     // Note: these are relative to the context-path (/api/v1) set in application.yml,
     // so "/auth/**" here matches actual requests to "/api/v1/auth/**".
     private static final String[] PUBLIC_POST_PATHS = {
-            "/auth/**"                  // login, register, OAuth callback, token refresh
+            "/auth/login",              // email + password login — no token yet
+            "/auth/register",           // new account creation — no token yet
+            "/auth/refresh",            // exchange refresh token for new access token
+            "/auth/logout"              // revoke refresh token — token may already be expired
+            // NOTE: /auth/change-password is intentionally excluded — it requires a valid JWT
     };
 
     private static final String[] PUBLIC_GET_PATHS = {

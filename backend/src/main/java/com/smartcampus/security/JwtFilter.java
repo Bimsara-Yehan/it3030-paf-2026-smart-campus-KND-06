@@ -148,10 +148,15 @@ public class JwtFilter extends OncePerRequestFilter {
             // extractEmail() also verifies the signature — a tampered token throws here.
             final String email = jwtService.extractEmail(jwt);
 
-            // ── Step 5: Skip if already authenticated ─────────────────────────
-            // If a previous filter already set an Authentication object in the
-            // SecurityContext (e.g. from a session), do not overwrite it.
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // ── Step 5: Always process the JWT if one is present ──────────────
+            // We intentionally do NOT skip when authentication is already set.
+            // A stale OAuth2 session or a leftover JWT session from a previous
+            // user can be restored into the SecurityContext before this filter runs.
+            // If we skipped processing here, that stale auth would remain — causing
+            // the wrong role (USER instead of ADMIN) or @AuthenticationPrincipal to
+            // receive an OAuth2User instead of our User entity (NPE → 500).
+            // A valid Bearer token must always override any session-restored context.
+            if (email != null) {
 
                 // ── Step 6: Load the user from the database ───────────────────
                 // UserDetailsService hits the DB to get the live user record,

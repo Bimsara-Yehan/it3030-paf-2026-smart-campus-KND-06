@@ -315,6 +315,42 @@ public class AuthService {
     }
 
     // =========================================================================
+    // Change password
+    // =========================================================================
+
+    /**
+     * Changes the password of the currently authenticated user.
+     *
+     * <p>Verifies that {@code currentPassword} matches the stored hash before
+     * applying the change. OAuth-only accounts (where {@code passwordHash} is
+     * {@code null}) are rejected because they have no local password to verify against.
+     *
+     * @param userId          the UUID of the authenticated user
+     * @param currentPassword the user's existing password (plaintext, verified against stored hash)
+     * @param newPassword     the desired new password (plaintext, will be BCrypt-hashed)
+     * @throws UnauthorizedException     if {@code currentPassword} does not match the stored hash,
+     *                                   or if the account is an OAuth-only account with no local password
+     * @throws ResourceNotFoundException if the user account no longer exists
+     */
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        if (user.getPasswordHash() == null) {
+            throw new UnauthorizedException("OAuth accounts cannot change their password here.");
+        }
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new UnauthorizedException("Current password is incorrect.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Password changed successfully for user {}", userId);
+    }
+
+    // =========================================================================
     // Login history
     // =========================================================================
 

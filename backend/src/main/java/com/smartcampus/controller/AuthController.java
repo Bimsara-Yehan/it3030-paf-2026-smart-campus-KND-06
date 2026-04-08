@@ -1,7 +1,9 @@
 package com.smartcampus.controller;
 
+import com.smartcampus.dto.request.ChangePasswordRequest;
 import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
+import com.smartcampus.entity.User;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.AuthResponse;
 import com.smartcampus.dto.response.LoginHistoryResponse;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -147,11 +150,21 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request) {
 
         log.debug("POST /auth/logout");
         String refreshToken = body.get("refreshToken");
         authService.logout(refreshToken);
+
+        // Invalidate the HTTP session so stale OAuth2AuthenticationTokens cannot
+        // contaminate the SecurityContext for the next user who logs in on the
+        // same browser (especially during user→admin account switching).
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully."));
     }
 
@@ -209,6 +222,34 @@ public class AuthController {
         log.debug("GET /auth/me");
         UserResponse user = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success("User profile retrieved.", user));
+    }
+
+    // =========================================================================
+    // POST /auth/change-password
+    // =========================================================================
+
+    /**
+     * Changes the password of the currently authenticated user.
+     *
+     * <p>Requires a valid Bearer token. The current password must be provided to
+     * confirm intent — OAuth-only accounts (no local password) are rejected.
+     *
+     * @param currentUser the authenticated user injected by Spring Security
+     * @param request     JSON body with {@code currentPassword} and {@code newPassword}
+     * @return {@code 200 OK} with a success message and no data payload
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        log.info("POST /auth/change-password — user: {}", currentUser.getId());
+        authService.changePassword(
+                currentUser.getId(),
+                request.getCurrentPassword(),
+                request.getNewPassword()
+        );
+        return ResponseEntity.ok(ApiResponse.success("Password changed successfully."));
     }
 
     // =========================================================================

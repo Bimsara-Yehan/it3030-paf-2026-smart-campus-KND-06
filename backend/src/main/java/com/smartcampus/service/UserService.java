@@ -178,6 +178,27 @@ public class UserService {
     }
 
     // =========================================================================
+    // Self-service — write operations
+    // =========================================================================
+
+    /**
+     * Updates the display name of the currently authenticated user.
+     *
+     * @param userId   the UUID of the user to update (must match the authenticated principal)
+     * @param fullName the new display name (non-blank, max 100 chars)
+     * @return the updated {@link UserResponse}
+     * @throws ResourceNotFoundException if no active user with the given ID exists
+     */
+    @Transactional
+    public UserResponse updateProfile(UUID userId, String fullName) {
+        User user = findActiveUserById(userId);
+        user.setName(fullName.trim());
+        user = userRepository.save(user);
+        log.info("User {} updated their display name", userId);
+        return UserResponse.from(user);
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
 
