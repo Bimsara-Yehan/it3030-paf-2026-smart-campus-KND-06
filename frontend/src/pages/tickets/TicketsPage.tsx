@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTickets } from '../../hooks/useTickets';
 import TicketForm from '../../components/tickets/TicketForm';
 import KanbanBoard from '../../components/tickets/KanbanBoard';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import {
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Bar,
+  BarChart,
+} from 'recharts';
 
 export default function TicketsPage() {
   const { user } = useAuth();
@@ -15,6 +28,46 @@ export default function TicketsPage() {
   const [sortBy, setSortBy] = useState<'NEWEST' | 'PRIORITY' | 'STATUS'>('NEWEST');
 
   const isElevated = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
+
+  // ── Ticket counts ────────────────────────────────────────────────────────
+  const openTicketsCount = tickets?.filter(t => t.status === 'OPEN').length || 0;
+  const inProgressCount = tickets?.filter(t => t.status === 'IN_PROGRESS').length || 0;
+
+  // ── Chart data calculations ──────────────────────────────────────────────
+  const ticketsByCategory = useMemo(() => {
+    if (!tickets) return [];
+    const counts: Record<string, number> = {};
+    tickets.forEach(t => {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value], i) => ({
+      name: name.replace('_', ' '),
+      value,
+      color: [`#3B82F6`, `#10B981`, `#F59E0B`, `#EF4444`, `#8B5CF6`][i % 5]
+    }));
+  }, [tickets]);
+
+  const ticketsByDay = useMemo(() => {
+    if (!tickets) return [];
+    const last7Days = Array.from({length: 7}).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d.toISOString().split('T')[0];
+    });
+    
+    const counts: Record<string, number> = {};
+    tickets.forEach(t => {
+      const day = t.createdAt.split('T')[0];
+      if (last7Days.includes(day)) {
+        counts[day] = (counts[day] || 0) + 1;
+      }
+    });
+
+    return last7Days.map(date => ({
+      date: new Date(date).toLocaleDateString([], {month: 'short', day: 'numeric'}),
+      count: counts[date] || 0
+    }));
+  }, [tickets]);
 
   const filteredTickets = (tickets || [])
     .filter((t) => (filterStatus === 'ALL' ? true : t.status === filterStatus))
@@ -55,13 +108,108 @@ export default function TicketsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
+    <div className="p-8 max-w-7xl mx-auto h-full flex flex-col space-y-8">
+      {/* ════════════════════════════════════════════════════════════════════
+          INCIDENT TICKETING SUMMARY CARD
+      ════════════════════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-md text-white animate-in slide-in-from-top duration-500">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <p className="text-sm font-medium text-blue-100">Incident Ticketing Summary</p>
+            <h2 className="mt-2 text-3xl font-bold">Active Campus Issues</h2>
+          </div>
+          <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-8 md:flex md:items-center md:gap-12">
+          <div className="flex flex-col">
+            <span className="text-4xl font-bold">{isLoading ? '...' : openTicketsCount}</span>
+            <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-400"></span> Open
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-4xl font-bold">{isLoading ? '...' : inProgressCount}</span>
+            <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400"></span> In Progress
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          ANALYTICS CHARTS (Category & Volume)
+      ════════════════════════════════════════════════════════════════════ */}
+      {!isLoading && tickets && tickets.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom duration-500">
+          {/* Tickets by Category */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Tickets by Category</h3>
+              <div className="text-xs font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full">
+                {tickets.length} total
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Distribution across categories</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={ticketsByCategory}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {ticketsByCategory.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CategoryTooltip />} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Recent Ticket Volume */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Recent Ticket Volume</h3>
+              <div className="text-xs font-medium text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full">
+                Last 7 days
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Daily submission trends</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ticketsByDay} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} />
+                  <Tooltip cursor={{fill: '#F9FAFB'}} content={<VolumeTooltip />} />
+                  <Bar dataKey="count" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          TICKETS LIST & MANAGEMENT
+      ════════════════════════════════════════════════════════════════════ */}
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Incident Support Tickets</h1>
-          <p className="text-gray-500 mt-1">
-            {user?.role === 'USER' ? 'Track issues you have reported across campus.' : 'Manage and resolve campus maintenance incidents.'}
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Manage Tickets</h2>
+          <p className="text-gray-500 mt-1 text-sm">
+            {user?.role === 'USER' ? 'View and track all your support requests.' : 'Review, assign, and resolve tickets.'}
           </p>
         </div>
         {user?.role !== 'ADMIN' && (
@@ -78,7 +226,7 @@ export default function TicketsPage() {
       </div>
 
       {/* Filter and View Toggle Bar */}
-      <div className="glass p-4 rounded-2xl shadow-sm border border-white/40 mb-6 flex flex-col sm:flex-row justify-between gap-4 sticky top-4 z-10 animate-in slide-in-from-bottom duration-500">
+      <div className="glass p-4 rounded-2xl shadow-sm border border-white/40 flex flex-col sm:flex-row justify-between gap-4 sticky top-4 z-10 animate-in slide-in-from-bottom duration-500">
         <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0">
           {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'].map((status) => (
             <button
@@ -257,6 +405,46 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Chart tooltip components ────────────────────────────────────────────────
+
+/**
+ * Custom tooltip for the ticket category pie chart.
+ */
+function CategoryTooltip({ active, payload }: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const entry = payload[0];
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold text-gray-700">{entry.name}</p>
+      <p className="mt-0.5 text-blue-600">
+        {entry.value} {entry.value === 1 ? 'ticket' : 'tickets'}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Custom tooltip for the ticket volume bar chart.
+ */
+function VolumeTooltip({ active, payload, label }: {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold text-gray-700">{label}</p>
+      <p className="mt-0.5 text-blue-600">
+        {payload[0].value} {payload[0].value === 1 ? 'ticket' : 'tickets'}
+      </p>
     </div>
   );
 }

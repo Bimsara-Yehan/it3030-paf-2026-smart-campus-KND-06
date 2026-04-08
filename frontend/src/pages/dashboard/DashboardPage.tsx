@@ -23,12 +23,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Bar,
-  BarChart,
 } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import axiosClient from '@/api/axiosClient';
-import { useTickets } from '@/hooks/useTickets';
 import type { User } from '@/types';
 
 // ── Role display helpers ───────────────────────────────────────────────────────
@@ -60,11 +57,6 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const navigate  = useNavigate();
   const isAdmin   = user?.role === 'ADMIN';
-
-  // ── Ticket state (Member C Integration) ────────────────────────────────────
-  const { data: tickets, isLoading: ticketsLoading } = useTickets();
-  const openTicketsCount = tickets?.filter(t => t.status === 'OPEN').length || 0;
-  const inProgressCount = tickets?.filter(t => t.status === 'IN_PROGRESS').length || 0;
 
   // ── Admin: user list state ─────────────────────────────────────────────────
   const [users,   setUsers]   = useState<User[]>([]);
@@ -106,41 +98,7 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   // ── Chart data ────────────────────────────────────────────────────────────
-
-  const ticketsByCategory = useMemo(() => {
-    if (!tickets) return [];
-    const counts: Record<string, number> = {};
-    tickets.forEach(t => {
-      counts[t.category] = (counts[t.category] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, value], i) => ({
-      name: name.replace('_', ' '),
-      value,
-      color: [`#3B82F6`, `#10B981`, `#F59E0B`, `#EF4444`, `#8B5CF6`][i % 5]
-    }));
-  }, [tickets]);
-
-  const ticketsByDay = useMemo(() => {
-    if (!tickets) return [];
-    const last7Days = Array.from({length: 7}).map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d.toISOString().split('T')[0];
-    });
-    
-    const counts: Record<string, number> = {};
-    tickets.forEach(t => {
-      const day = t.createdAt.split('T')[0];
-      if (last7Days.includes(day)) {
-        counts[day] = (counts[day] || 0) + 1;
-      }
-    });
-
-    return last7Days.map(date => ({
-      date: new Date(date).toLocaleDateString([], {month: 'short', day: 'numeric'}),
-      count: counts[date] || 0
-    }));
-  }, [tickets]);
+  
   /**
    * Registration trend for the last 7 calendar days (today included).
    * Each entry has a short date label for the X-axis and a count for the Y-axis.
@@ -268,43 +226,6 @@ export default function DashboardPage() {
                 </svg>
               }
             />
-
-            {/* Member C: Live Incident Summary Card */}
-            <div className="col-span-2 sm:col-span-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-md text-white">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-100">Incident Ticketing Summary</p>
-                  <h3 className="mt-2 text-2xl font-bold">Active Campus Issues</h3>
-                </div>
-                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-              </div>
-              <div className="mt-6 flex items-center gap-8">
-                <div className="flex flex-col">
-                  <span className="text-3xl font-bold">{ticketsLoading ? '...' : openTicketsCount}</span>
-                  <span className="text-xs font-medium text-blue-100 flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-red-400"></span> Open
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-3xl font-bold">{ticketsLoading ? '...' : inProgressCount}</span>
-                  <span className="text-xs font-medium text-blue-100 flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-yellow-400"></span> In Progress
-                  </span>
-                </div>
-                <div className="ml-auto">
-                   <button 
-                    onClick={() => navigate('/tickets')}
-                    className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors backdrop-blur-sm"
-                   >
-                     Manage Tickets →
-                   </button>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* ── Analytics Overview ── */}
@@ -350,52 +271,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          ADMIN/TECH: Ticket Analytics
-      ═══════════════════════════════════════════════════════════════════ */}
-      {(isAdmin || user?.role === 'TECHNICIAN') && tickets && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom duration-700">
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900 mb-6 uppercase tracking-wider">Tickets by Category</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={ticketsByCategory}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {ticketsByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<PieTooltip />} />
-                    <Legend verticalAlign="bottom" height={36}/>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-           </div>
-
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900 mb-6 uppercase tracking-wider">Recent Ticket Volume</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ticketsByDay}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#9CA3AF'}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#9CA3AF'}} />
-                    <Tooltip cursor={{fill: '#F9FAFB'}} content={<TrendTooltip />} />
-                    <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-           </div>
-        </div>
-      )}
       <div className="glass rounded-3xl bg-white/40 p-8 shadow-sm ring-1 ring-white/50 border border-white/20 animate-in slide-in-from-bottom duration-700">
         <p className="text-sm font-medium text-blue-600">Welcome back</p>
 

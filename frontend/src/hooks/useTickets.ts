@@ -24,6 +24,10 @@ export function useTickets() {
     queryKey: isElevated ? ticketKeys.allTickets() : ticketKeys.my(),
     queryFn: () => isElevated ? ticketApi.getAllTickets() : ticketApi.getMyTickets(),
     enabled: !!user,
+    staleTime: 1000 * 30, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: true, // Refetch when user returns to window
+    refetchOnMount: true, // Refetch when component mounts
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 }
 
