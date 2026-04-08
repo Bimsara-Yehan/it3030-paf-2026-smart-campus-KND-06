@@ -1,26 +1,25 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
+// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  
-  // Path alias — allows importing from '@/components/...' 
-  // instead of '../../components/...'
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-
-  // Proxy API requests to Spring Boot backend during development
-  // Requests to /api/v1/... are forwarded to localhost:8080
+  plugins: [
+    react(),
+    tsconfigPaths({
+      // Targeted discovery — this ensures Vite follows the config for your /src app
+      projects: ['./tsconfig.app.json'],
+      logFile: true // Generates vite-tsconfig-paths.log for debugging if it still fails
+    })
+  ],
   server: {
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8086',
+        target: 'http://127.0.0.1:8081',
         changeOrigin: true,
+        secure: false,
+        ws: true,
       },
     },
   },

@@ -88,7 +88,7 @@ spring:
 
 # ── Server ───────────────────────────────────────────────────────────────────
 server:
-  port: 8086
+  port: 8081
   servlet:
     context-path: /api/v1               # All API endpoints are prefixed with /api/v1
 

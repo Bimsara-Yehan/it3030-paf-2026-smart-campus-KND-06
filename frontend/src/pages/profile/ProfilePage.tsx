@@ -15,9 +15,9 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import axiosClient, { REFRESH_TOKEN_KEY } from '@/api/axiosClient';
-import type { UserRole } from '@/types';
+import { useAuth } from '../../context/AuthContext';
+import axiosClient, { REFRESH_TOKEN_KEY } from '../../api/axiosClient';
+import type { UserRole } from '../../types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -112,7 +112,7 @@ function InputField({
           'mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none',
           readOnly
             ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-default'
-            : 'border-gray-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
+            : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
         ].join(' ')}
       />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

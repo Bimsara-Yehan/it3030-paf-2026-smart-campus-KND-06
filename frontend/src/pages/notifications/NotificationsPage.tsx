@@ -11,8 +11,8 @@
  *  - Empty, loading, and error states handled inline
  */
 
-import { useNotifications } from '@/hooks/useNotifications';
-import type { Notification, NotificationType } from '@/types';
+import { useNotifications } from '../../hooks/useNotifications';
+import type { Notification, NotificationType } from '../../types';
 
 // ── Time-ago helper ───────────────────────────────────────────────────────────
 

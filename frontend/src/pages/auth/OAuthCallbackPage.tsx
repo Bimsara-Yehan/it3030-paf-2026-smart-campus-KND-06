@@ -22,9 +22,9 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axiosClient, { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/axiosClient';
-import { useAuth } from '@/context/AuthContext';
-import type { ApiResponse, User } from '@/types';
+import axiosClient, { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../../api/axiosClient';
+import { useAuth } from '../../context/AuthContext';
+import type { ApiResponse, User } from '../../types';
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();

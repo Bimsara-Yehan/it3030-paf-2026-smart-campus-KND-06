@@ -18,9 +18,9 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosClient, { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/axiosClient';
-import { useAuth } from '@/context/AuthContext';
-import type { ApiResponse, AuthResponse } from '@/types';
+import axiosClient, { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../api/axiosClient';
+import { useAuth } from '../context/AuthContext';
+import type { ApiResponse, AuthResponse } from '../types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

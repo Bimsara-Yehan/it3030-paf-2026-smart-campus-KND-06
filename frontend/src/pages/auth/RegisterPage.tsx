@@ -20,7 +20,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 // ── Local form type (adds confirmPassword for client-side validation only) ────
 // RegisterRequest from @/types only has { fullName, email, password }.
@@ -187,7 +187,7 @@ export default function RegisterPage() {
                 minLength: { value: 2,   message: 'Name must be at least 2 characters' },
                 maxLength: { value: 100, message: 'Name must be at most 100 characters' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
             {errors.fullName && (
               <p className="mt-1 text-xs text-red-600">{errors.fullName.message}</p>
@@ -207,7 +207,7 @@ export default function RegisterPage() {
                 required: 'Email is required',
                 pattern:  { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
             {errors.email && (
               <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -230,7 +230,7 @@ export default function RegisterPage() {
                   required:  'Password is required',
                   minLength: { value: 8, message: 'Password must be at least 8 characters' },
                 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
               <button
                 type="button"
@@ -312,7 +312,7 @@ export default function RegisterPage() {
                   validate:  (value) =>
                     value === passwordValue || 'Passwords do not match',
                 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
               <button
                 type="button"

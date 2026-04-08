@@ -76,8 +76,11 @@ export default function DashboardPage() {
       .then((res) => {
         if (!cancelled) setUsers(res.data.data ?? []);
       })
-      .catch(() => {
-        if (!cancelled) setError('Could not load user statistics. Please refresh the page.');
+      .catch((err) => {
+        if (!cancelled) {
+          const msg = err.response?.data?.message || 'Could not load user statistics. Please refresh the page.';
+          setError(msg);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
