@@ -17,16 +17,17 @@ import RegisterPage from './pages/auth/RegisterPage';
 import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
 import ForbiddenPage from './pages/errors/ForbiddenPage';
 
-import DashboardPage from './pages/dashboard/DashboardPage';
-import NotificationsPage from './pages/notifications/NotificationsPage';
-import NotificationPreferencesPage from './pages/notifications/NotificationPreferencesPage';
-import BookingsPage from './pages/bookings/BookingsPage';
-import CreateBookingPage from './pages/bookings/CreateBookingPage';
-import TicketsPage from './pages/tickets/TicketsPage';
-import ResourcesPage from './pages/resources/ResourcesPage';
-import UserManagementPage from './pages/admin/UserManagementPage';
-import ProfilePage from './pages/profile/ProfilePage';
-import LoginHistoryPage from './pages/profile/LoginHistoryPage';
+import DashboardPage from '@/pages/dashboard/DashboardPage';
+import NotificationsPage from '@/pages/notifications/NotificationsPage';
+import NotificationPreferencesPage from '@/pages/notifications/NotificationPreferencesPage';
+import BookingsPage from '@/pages/bookings/BookingsPage';
+import CreateBookingPage from '@/pages/bookings/CreateBookingPage';
+import TicketsPage from '@/pages/tickets/TicketsPage';
+import TicketDetailPage from '@/pages/tickets/TicketDetailPage';
+import ResourcesPage from '@/pages/resources/ResourcesPage';
+import UserManagementPage from '@/pages/admin/UserManagementPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
+import LoginHistoryPage from '@/pages/profile/LoginHistoryPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,11 +38,14 @@ const queryClient = new QueryClient({
   },
 });
 
+import ToastContainer from './components/ui/ToastContainer';
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
+          <ToastContainer />
           <Routes>
             {/* ── Public routes ── */}
             <Route path="/login"     element={<LoginPage />} />
@@ -60,12 +64,11 @@ export default function App() {
                 <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
                 <Route path="/profile"       element={<ProfilePage />} />
                 <Route path="/login-history" element={<LoginHistoryPage />} />
-                
                 {/* Booking Routes */}
                 <Route path="/bookings"        element={<BookingsPage />} />
                 <Route path="/bookings/create" element={<CreateBookingPage />} />
-                
                 <Route path="/tickets"       element={<TicketsPage />} />
+                <Route path="/tickets/:id"   element={<TicketDetailPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />
 
                 {/* Admin-only routes */}

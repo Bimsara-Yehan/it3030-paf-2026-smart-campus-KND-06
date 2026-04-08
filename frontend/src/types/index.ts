@@ -7,14 +7,15 @@
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
-// ── Enums (Refactored to Types/Consts for erasableSyntaxOnly) ────────────────
-
-export type UserRole = 'USER' | 'ADMIN' | 'TECHNICIAN';
 export const UserRole = {
   USER: 'USER',
   ADMIN: 'ADMIN',
   TECHNICIAN: 'TECHNICIAN',
 } as const;
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export const BookingStatus = {

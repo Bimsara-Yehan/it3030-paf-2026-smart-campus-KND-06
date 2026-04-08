@@ -107,6 +107,20 @@ public class User implements UserDetails {
     @Column(name = "profile_picture", nullable = true, length = 500)
     private String profilePicture;
 
+    // ── Technician specialization ─────────────────────────────────────────────
+
+    /**
+     * Specialization/category for TECHNICIAN role users.
+     * Maps to TicketCategory to define which type of tickets this technician can handle.
+     * Nullable — only TECHNICIAN users should have a non-null specialty.
+     * Non-technicians (USER, ADMIN) have {@code null} here.
+     *
+     * @see com.smartcampus.enums.TicketCategory
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "specialty", nullable = true, length = 20)
+    private com.smartcampus.enums.TicketCategory specialty;
+
     // ── Account state ─────────────────────────────────────────────────────────
 
     /**

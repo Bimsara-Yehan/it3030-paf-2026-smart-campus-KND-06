@@ -3,6 +3,7 @@ package com.smartcampus.controller;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.enums.UserRole;
+import com.smartcampus.enums.TicketCategory;
 import com.smartcampus.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,48 @@ public class UserController {
         log.debug("GET /users");
         List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(ApiResponse.success("Users retrieved.", users));
+    }
+
+    /**
+     * Returns all active users with a specific role.
+     *
+     * @param role the role to filter by (e.g., TECHNICIAN, ADMIN)
+     * @return a list of {@link UserResponse} DTOs
+     */
+    @GetMapping("/role/{role}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersByRole(@PathVariable UserRole role) {
+        log.debug("GET /users/role/{}", role);
+        List<UserResponse> users = userService.getUsersByRole(role);
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved by role.", users));
+    }
+
+    /**
+     * Returns all active technicians with a specific specialization category.
+     *
+     * <p>Used by admin when assigning tickets — filtered list ensures only
+     * technicians qualified for the ticket's category are shown.
+     * Available to ADMIN users. If no category is provided via query parameter,
+     * returns all TECHNICIAN users.
+     *
+     * @param category optional query parameter for TicketCategory specialization
+     * @return a list of {@link UserResponse} DTOs for matching technicians
+     */
+    @GetMapping("/technicians")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getTechnicians(
+            @RequestParam(value = "category", required = false) TicketCategory category) {
+        log.debug("GET /users/technicians?category={}", category);
+        
+        List<UserResponse> users;
+        if (category != null) {
+            users = userService.getTechniciansBySpecialty(category);
+            log.debug("Returned {} technicians for category: {}", users.size(), category);
+        } else {
+            users = userService.getUsersByRole(UserRole.TECHNICIAN);
+            log.debug("Returned {} technicians (no category filter)", users.size());
+        }
+        return ResponseEntity.ok(ApiResponse.success("Technicians retrieved.", users));
     }
 
     // =========================================================================

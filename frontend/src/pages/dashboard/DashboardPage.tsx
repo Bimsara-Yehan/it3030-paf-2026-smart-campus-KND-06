@@ -24,10 +24,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useAuth } from '../../context/AuthContext';
-import axiosClient from '../../api/axiosClient';
-import { UserRole } from '../../types';
-import type { User } from '../../types';
+import { useAuth } from '@/context/AuthContext';
+import axiosClient from '@/api/axiosClient';
+import type { User } from '@/types';
 
 // ── Role display helpers ───────────────────────────────────────────────────────
 
@@ -57,7 +56,7 @@ const ROLE_AVATAR_BG: Record<string, string> = {
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate  = useNavigate();
-  const isAdmin   = user?.role === UserRole.ADMIN;
+  const isAdmin   = user?.role === 'ADMIN';
 
   // ── Admin: user list state ─────────────────────────────────────────────────
   const [users,   setUsers]   = useState<User[]>([]);
@@ -92,9 +91,9 @@ export default function DashboardPage() {
 
   // ── Derived counts (cheap — runs only when users array changes) ────────────
   const totalUsers       = users.length;
-  const adminCount       = users.filter((u) => u.role === UserRole.ADMIN).length;
-  const technicianCount  = users.filter((u) => u.role === UserRole.TECHNICIAN).length;
-  const regularUserCount = users.filter((u) => u.role === UserRole.USER).length;
+  const adminCount       = users.filter((u) => u.role === 'ADMIN').length;
+  const technicianCount  = users.filter((u) => u.role === 'TECHNICIAN').length;
+  const regularUserCount = users.filter((u) => u.role === 'USER').length;
 
   // Last 5 registered — sort descending by createdAt then slice
   const recentUsers = [...users]
@@ -102,7 +101,7 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   // ── Chart data ────────────────────────────────────────────────────────────
-
+  
   /**
    * Registration trend for the last 7 calendar days (today included).
    * Each entry has a short date label for the X-axis and a count for the Y-axis.
@@ -152,7 +151,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-10 animate-in fade-in duration-1000">
 
       {/* ═══════════════════════════════════════════════════════════════════
           ADMIN-ONLY: Statistics + Recent Users
@@ -275,10 +274,7 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          ALL ROLES: Welcome card + module quick-links
-      ═══════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
+      <div className="glass rounded-3xl bg-white/40 p-8 shadow-sm ring-1 ring-white/50 border border-white/20 animate-in slide-in-from-bottom duration-700">
         <p className="text-sm font-medium text-blue-600">Welcome back</p>
 
         <h2 className="mt-1 text-3xl font-bold text-gray-900">
@@ -487,7 +483,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, loading, colorRing, iconBg, iconText, countText, icon }: StatCardProps) {
   return (
-    <div className={['rounded-2xl bg-white p-5 shadow-sm ring-1', colorRing].join(' ')}>
+    <div className={['rounded-2xl bg-white p-5 shadow-sm ring-1 transition-all hover:shadow-md', colorRing, loading ? 'shimmer' : ''].join(' ')}>
       {/* Icon */}
       <div className={['inline-flex h-10 w-10 items-center justify-center rounded-xl', iconBg, iconText].join(' ')}>
         {icon}
@@ -495,7 +491,7 @@ function StatCard({ label, value, loading, colorRing, iconBg, iconText, countTex
 
       {/* Count */}
       {loading ? (
-        <div className="mt-4 h-8 w-16 animate-pulse rounded-lg bg-gray-200" />
+        <div className="mt-4 h-8 w-16 opacity-0" />
       ) : (
         <p className={['mt-4 text-3xl font-bold', countText].join(' ')}>{value}</p>
       )}
