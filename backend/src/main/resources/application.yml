@@ -61,7 +61,6 @@ spring:
               - openid
               - profile
               - email
-            redirect-uri: "{baseUrl}/api/v1/auth/oauth2/callback/{registrationId}"
 
   # ── Mail ───────────────────────────────────────────────────────────────────
   # Configure SMTP credentials via environment variables in production.

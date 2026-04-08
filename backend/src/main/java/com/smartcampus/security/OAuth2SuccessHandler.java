@@ -129,7 +129,22 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             // ── 4. Persist the refresh token ──────────────────────────────────
             saveRefreshToken(user, refreshTokenValue);
 
-            // ── 5. Redirect browser to the React callback page ────────────────
+            // ── 5. Invalidate the OAuth2 HTTP session ─────────────────────────
+            // Spring Security stores an OAuth2AuthenticationToken in the session
+            // after the OAuth2 dance completes. If we leave it there, every
+            // subsequent API request from the browser will carry the session
+            // cookie, Spring will restore the OAuth2AuthenticationToken into the
+            // SecurityContext, the JwtFilter will skip JWT processing (auth already
+            // set), and @AuthenticationPrincipal User will be null (the principal
+            // is OAuth2User, not our User entity) — causing NPEs in controllers.
+            // Destroying the session here ensures all future requests are
+            // authenticated exclusively via the JWT we just issued.
+            jakarta.servlet.http.HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+
+            // ── 6. Redirect browser to the React callback page ────────────────
             // JWT tokens use base64url encoding (RFC 4648 §5) — characters are
             // limited to [A-Za-z0-9\-_\.], so they are URL-safe without additional encoding.
             String redirectUrl = CALLBACK_URL

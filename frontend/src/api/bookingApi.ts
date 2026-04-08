@@ -20,7 +20,7 @@ export const bookingApi = {
 
   /** Get user's own bookings */
   getMyBookings: () => 
-    axiosClient.get<ApiResponse<Booking[]>>('/bookings/me'),
+    axiosClient.get<ApiResponse<Booking[]>>('/bookings/my'),
 
   /** Get single booking details */
   getById: (id: string) => 

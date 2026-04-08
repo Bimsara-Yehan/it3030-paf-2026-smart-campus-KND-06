@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   /** Redirect to Spring Security's OAuth2 authorisation endpoint for Google. */
   const handleGoogleLogin = () => {
-    window.location.href = '/api/v1/auth/oauth2/google';
+    window.location.href = 'http://localhost:8081/api/v1/auth/oauth2/google';
   };
 
   return (
