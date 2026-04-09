@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/resources")
+@RequestMapping("/resources")
 @RequiredArgsConstructor
 @Slf4j
 public class ResourceController {
@@ -29,7 +29,7 @@ public class ResourceController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<ResourceResponse>>> getAllResources() {
         List<ResourceResponse> data = resourceService.getAllResources();
-        return ResponseEntity.ok(ApiResponse.success(data, "Fetched all resources successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Fetched all resources successfully", data));
     }
 
     @GetMapping("/search")
@@ -49,19 +49,19 @@ public class ResourceController {
             data = resourceService.searchResources(type, minCapacity, location);
         }
         
-        return ResponseEntity.ok(ApiResponse.success(data, "Search completed successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Search completed successfully", data));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ResourceResponse>> getResourceById(@PathVariable UUID id) {
         ResourceResponse data = resourceService.getResourceById(id);
-        return ResponseEntity.ok(ApiResponse.success(data, "Resource fetched successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Resource fetched successfully", data));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ResourceResponse>> createResource(@Valid @RequestBody CreateResourceRequest request) {
         ResourceResponse data = resourceService.createResource(request, SYSTEM_ADMIN_ID);
-        return new ResponseEntity<>(ApiResponse.success(data, "Resource created successfully"), HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.success("Resource created successfully", data), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
@@ -69,13 +69,13 @@ public class ResourceController {
             @PathVariable UUID id, 
             @Valid @RequestBody UpdateResourceRequest request) {
         ResourceResponse data = resourceService.updateResource(id, request);
-        return ResponseEntity.ok(ApiResponse.success(data, "Resource updated successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Resource updated successfully", data));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteResource(@PathVariable UUID id) {
         resourceService.deleteResource(id);
-        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Resource archived successfully"));
+        return ResponseEntity.ok(ApiResponse.<Void>success("Resource archived successfully", null));
     }
 
     @PatchMapping("/{id}/status")
@@ -83,12 +83,12 @@ public class ResourceController {
             @PathVariable UUID id, 
             @RequestParam ResourceStatus status) {
         ResourceResponse data = resourceService.changeResourceStatus(id, status);
-        return ResponseEntity.ok(ApiResponse.success(data, "Status updated successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Status updated successfully", data));
     }
 
     @GetMapping("/{id}/availability")
     public ResponseEntity<ApiResponse<List<ResourceAvailabilityResponse>>> getAvailability(@PathVariable UUID id) {
         List<ResourceAvailabilityResponse> data = resourceService.getResourceAvailability(id);
-        return ResponseEntity.ok(ApiResponse.success(data, "Availability fetched successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Availability fetched successfully", data));
     }
 }
