@@ -98,6 +98,7 @@ app:
     secret: "${JWT_SECRET:your-very-long-base64-encoded-secret-key-replace-this-in-production-minimum-256-bits}"
     access-token-expiration-ms: 900000    # 15 minutes  (15 * 60 * 1000)
     refresh-token-expiration-ms: 604800000 # 7 days     (7 * 24 * 60 * 60 * 1000)
+  frontend-url: "${FRONTEND_URL:http://localhost:5173}"  # Base URL for password-reset links
 
 # ── SpringDoc / Swagger UI ────────────────────────────────────────────────────
 # Swagger UI accessible at: http://localhost:8080/api/swagger-ui.html

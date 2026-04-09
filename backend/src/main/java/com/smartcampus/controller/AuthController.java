@@ -1,8 +1,10 @@
 package com.smartcampus.controller;
 
 import com.smartcampus.dto.request.ChangePasswordRequest;
+import com.smartcampus.dto.request.ForgotPasswordRequest;
 import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
+import com.smartcampus.dto.request.ResetPasswordRequest;
 import com.smartcampus.entity.User;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.AuthResponse;
@@ -222,6 +224,48 @@ public class AuthController {
         log.debug("GET /auth/me");
         UserResponse user = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success("User profile retrieved.", user));
+    }
+
+    // =========================================================================
+    // POST /auth/forgot-password
+    // =========================================================================
+
+    /**
+     * Initiates the password-reset flow.
+     *
+     * <p>Always returns {@code 200 OK} regardless of whether the email is registered
+     * to prevent user enumeration. The reset email is sent asynchronously.
+     *
+     * @param request JSON body with {@code email}
+     * @return {@code 200 OK} with a generic success message
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        log.info("POST /auth/forgot-password — email: {}", request.getEmail());
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "If that email is registered you will receive a reset link shortly."));
+    }
+
+    // =========================================================================
+    // POST /auth/reset-password
+    // =========================================================================
+
+    /**
+     * Completes the password-reset flow by verifying the token and setting a new password.
+     *
+     * @param request JSON body with {@code token} and {@code newPassword}
+     * @return {@code 200 OK} on success; {@code 401} if the token is invalid/expired/used
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        log.info("POST /auth/reset-password");
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully. Please log in."));
     }
 
     // =========================================================================

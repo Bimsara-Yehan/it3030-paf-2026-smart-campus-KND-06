@@ -15,6 +15,8 @@ import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ForbiddenPage from './pages/errors/ForbiddenPage';
 
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -44,10 +46,12 @@ export default function App() {
         <AuthProvider>
           <Routes>
             {/* ── Public routes ── */}
-            <Route path="/login"     element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-            <Route path="/forbidden" element={<ForbiddenPage />} />
+            <Route path="/login"            element={<LoginPage />} />
+            <Route path="/register"         element={<RegisterPage />} />
+            <Route path="/oauth/callback"   element={<OAuthCallbackPage />} />
+            <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
+            <Route path="/reset-password"   element={<ResetPasswordPage />} />
+            <Route path="/forbidden"        element={<ForbiddenPage />} />
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 

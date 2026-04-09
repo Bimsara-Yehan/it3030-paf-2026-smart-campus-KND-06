@@ -77,7 +77,9 @@ public class SecurityConfig {
             "/auth/login",              // email + password login — no token yet
             "/auth/register",           // new account creation — no token yet
             "/auth/refresh",            // exchange refresh token for new access token
-            "/auth/logout"              // revoke refresh token — token may already be expired
+            "/auth/logout",             // revoke refresh token — token may already be expired
+            "/auth/forgot-password",    // initiate password reset — no token yet
+            "/auth/reset-password"      // complete password reset — token is the auth mechanism
             // NOTE: /auth/change-password is intentionally excluded — it requires a valid JWT
     };
 
