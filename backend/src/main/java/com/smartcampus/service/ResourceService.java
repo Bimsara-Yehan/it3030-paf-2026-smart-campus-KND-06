@@ -30,24 +30,29 @@ public class ResourceService {
 
     @Transactional(readOnly = true)
     public List<ResourceResponse> getAllResources() {
-        return resourceRepository.findByDeletedAtIsNull().stream()
+        return resourceRepository.findAllByDeletedAtIsNull().stream()
                 .map(ResourceResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<ResourceResponse> searchResources(String typeStr, Integer minCapacity, String location) {
-        ResourceType type = null;
-        if (typeStr != null && !typeStr.isEmpty()) {
-            try { type = ResourceType.valueOf(typeStr.toUpperCase()); } catch (Exception ignored) {}
+        ResourceType typeParam = null;
+        if (typeStr != null && !typeStr.isEmpty() && !typeStr.equalsIgnoreCase("All Types")) {
+            try {
+                typeParam = ResourceType.valueOf(typeStr.toUpperCase().replace(" ", "_"));
+            } catch (Exception e) {}
         }
         
-        List<Resource> resources = resourceRepository.searchResources(
-                type != null ? type.name() : null, 
-                minCapacity, 
-                location
-        );
-        return resources.stream().map(ResourceResponse::from).collect(Collectors.toList());
+        List<Resource> all = resourceRepository.findAllByDeletedAtIsNull();
+        final ResourceType finalType = typeParam;
+        
+        return all.stream()
+                .filter(r -> finalType == null || r.getType() == finalType)
+                .filter(r -> minCapacity == null || r.getCapacity() >= minCapacity)
+                .filter(r -> location == null || r.getLocation().toLowerCase().contains(location.toLowerCase()))
+                .map(ResourceResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -56,12 +61,13 @@ public class ResourceService {
         String q = naturalQuery.toLowerCase();
         
         // --- The Smart Search Lexical Parser ---
+        // Maps natural language keywords to DB-valid resource types
+        // DB constraint: LECTURE_HALL | LAB | MEETING_ROOM | EQUIPMENT
         ResourceType detectedType = null;
-        if (q.contains("lab")) detectedType = ResourceType.LAB;
-        else if (q.contains("hall") || q.contains("theatre")) detectedType = ResourceType.ROOM; // Mapped ROOM since LECTURE_HALL was genericized
-        else if (q.contains("equipment") || q.contains("projector")) detectedType = ResourceType.EQUIPMENT;
-        else if (q.contains("vehicle") || q.contains("van")) detectedType = ResourceType.VEHICLE;
-        else if (q.contains("sport") || q.contains("court")) detectedType = ResourceType.SPORTS_FACILITY;
+        if (q.contains("lab") || q.contains("laboratory") || q.contains("computer")) detectedType = ResourceType.LAB;
+        else if (q.contains("lecture") || q.contains("hall") || q.contains("theatre") || q.contains("auditorium")) detectedType = ResourceType.LECTURE_HALL; 
+        else if (q.contains("meeting") || q.contains("conference") || q.contains("room") || q.contains("pod") || q.contains("study")) detectedType = ResourceType.MEETING_ROOM;
+        else if (q.contains("equipment") || q.contains("projector") || q.contains("camera") || q.contains("mic") || q.contains("laptop")) detectedType = ResourceType.EQUIPMENT;
 
         Integer detectedCapacity = null;
         String[] words = q.split(" ");
@@ -78,12 +84,17 @@ public class ResourceService {
 
         log.info("Parsed Intent Config - Type: {}, MinCap: {}, Loc: {}", detectedType, detectedCapacity, detectedLocation);
 
-        List<Resource> resources = resourceRepository.searchResources(
-                detectedType != null ? detectedType.name() : null,
-                detectedCapacity,
-                detectedLocation
-        );
-        return resources.stream().map(ResourceResponse::from).collect(Collectors.toList());
+        List<Resource> all = resourceRepository.findAllByDeletedAtIsNull();
+        final ResourceType finalType = detectedType;
+        final Integer finalCap = detectedCapacity;
+        final String finalLoc = detectedLocation;
+
+        return all.stream()
+                .filter(r -> finalType == null || r.getType() == finalType)
+                .filter(r -> finalCap == null || r.getCapacity() >= finalCap)
+                .filter(r -> finalLoc == null || r.getLocation().toLowerCase().contains(finalLoc.toLowerCase()))
+                .map(ResourceResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -105,7 +116,7 @@ public class ResourceService {
                 .capacity(request.getCapacity())
                 .location(request.getLocation())
                 .description(request.getDescription())
-                .status(ResourceStatus.AVAILABLE)
+                .status(ResourceStatus.ACTIVE)
                 .createdBy(adminUser)
                 .build();
         
@@ -136,7 +147,7 @@ public class ResourceService {
         Resource existing = resourceRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
         existing.setDeletedAt(LocalDateTime.now());
-        existing.setStatus(ResourceStatus.RETIRED);
+        existing.setStatus(ResourceStatus.OUT_OF_SERVICE);
         resourceRepository.save(existing);
     }
 

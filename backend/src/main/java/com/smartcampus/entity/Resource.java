@@ -44,7 +44,7 @@ public class Resource {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
-    private ResourceStatus status = ResourceStatus.AVAILABLE;
+    private ResourceStatus status = ResourceStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

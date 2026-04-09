@@ -1,9 +1,9 @@
 package com.smartcampus.repository;
 
 import com.smartcampus.entity.Resource;
+import com.smartcampus.enums.ResourceStatus;
+import com.smartcampus.enums.ResourceType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,11 +17,10 @@ public interface ResourceRepository extends JpaRepository<Resource, UUID> {
 
     List<Resource> findAllByDeletedAtIsNull();
 
-    @Query("SELECT r FROM Resource r WHERE r.deletedAt IS NULL AND " +
-            "(:type IS NULL OR r.type = :type) AND " +
-            "(:minCapacity IS NULL OR r.capacity >= :minCapacity) AND " +
-            "(:location IS NULL OR LOWER(r.location) LIKE LOWER(CONCAT('%', :location, '%')))")
-    List<Resource> searchResources(@Param("type") String type,
-                                   @Param("minCapacity") Integer minCapacity,
-                                   @Param("location") String location);
+    List<Resource> findByTypeAndDeletedAtIsNull(ResourceType type);
+
+    List<Resource> findByStatusAndDeletedAtIsNull(ResourceStatus status);
+
+    List<Resource> findByNameContainingIgnoreCaseAndDeletedAtIsNull(String name);
+
 }

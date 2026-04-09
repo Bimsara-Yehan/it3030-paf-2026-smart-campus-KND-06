@@ -6,5 +6,8 @@ public enum ResourceType {
     EQUIPMENT,
     VEHICLE,
     SPORTS_FACILITY,
-    OTHER
+    OTHER,
+    // Support legacy Cloud DB records inserted by other team members
+    LECTURE_HALL,
+    MEETING_ROOM
 }
