@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -201,6 +202,23 @@ public class GlobalExceptionHandler {
     // =========================================================================
 
     /**
+     * Handles {@link AccessDeniedException} — thrown by Spring Security when
+     * an authenticated user attempts an action forbidden by @PreAuthorize or
+     * other security constraints.
+     *
+     * @param ex      the exception carrying the error message
+     * @param request the current HTTP request
+     * @return 403 Forbidden with a structured error body
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+
+        log.warn("AccessDeniedException on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "You do not have permission to perform this action.", request);
+    }
+
+    /**
      * Catches any unhandled {@link Exception} that is not matched by a more
      * specific handler above. Acts as a safety net to prevent raw Java stack
      * traces from leaking to the client.
@@ -214,15 +232,14 @@ public class GlobalExceptionHandler {
      * @return 500 Internal Server Error with a generic error body
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(
+    public ResponseEntity<Map<String, Object>> handleAllUncaughtExceptions(
             Exception ex, HttpServletRequest request) {
 
-        // Log the full stack trace so developers can diagnose the root cause
-        log.error("Unhandled exception on [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.error("Unhandled exception on [{}]:", request.getRequestURI(), ex);
 
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred. Please try again later.",
+                "An unexpected error occurred. Exact cause: " + ex.getClass().getSimpleName() + " - " + ex.getMessage() + (ex.getCause() != null ? " (" + ex.getCause().getMessage() + ")" : ""),
                 request
         );
     }

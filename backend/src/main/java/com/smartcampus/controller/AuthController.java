@@ -4,8 +4,11 @@ import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.AuthResponse;
+import com.smartcampus.dto.response.LoginHistoryResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -89,10 +94,11 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
 
         log.info("POST /auth/login — email: {}", request.getEmail());
-        AuthResponse authResponse = authService.login(request);
+        AuthResponse authResponse = authService.login(request, httpRequest);
         return ResponseEntity.ok(ApiResponse.success("Login successful.", authResponse));
     }
 
@@ -150,6 +156,42 @@ public class AuthController {
     }
 
     // =========================================================================
+    // GET /auth/oauth2/google
+    // =========================================================================
+
+    /**
+     * Entry point for the Google OAuth2 login flow.
+     *
+     * <p>The React frontend's "Sign in with Google" button links to this endpoint.
+     * This method simply redirects the browser to Spring Security's built-in OAuth2
+     * authorization endpoint ({@code /oauth2/authorization/google}), which then:
+     * <ol>
+     *   <li>Generates the Google authorization URL with {@code client_id}, {@code redirect_uri},
+     *       {@code scope}, and a CSRF {@code state} parameter.</li>
+     *   <li>Stores the {@code state} in the HTTP session for validation on the callback.</li>
+     *   <li>Redirects the browser to Google's consent screen.</li>
+     * </ol>
+     *
+     * <p>After the user approves on Google, Spring Security handles the callback at
+     * {@code /login/oauth2/code/google}, validates the state, exchanges the code for
+     * tokens, and invokes {@link com.smartcampus.security.OAuth2SuccessHandler}.
+     *
+     * @param request  the incoming HTTP request (used to read the context path)
+     * @param response the HTTP response (used to issue the redirect)
+     * @throws IOException if the redirect fails at the servlet level
+     */
+    @GetMapping("/oauth2/google")
+    public void initiateGoogleLogin(HttpServletRequest request,
+                                    HttpServletResponse response) throws IOException {
+
+        // Build the redirect URL relative to the application context path so this
+        // works regardless of whether the context path is /api/v1 or something else.
+        String redirectUrl = request.getContextPath() + "/oauth2/authorization/google";
+        log.info("GET /auth/oauth2/google — initiating OAuth2 flow, redirecting to: {}", redirectUrl);
+        response.sendRedirect(redirectUrl);
+    }
+
+    // =========================================================================
     // GET /auth/me
     // =========================================================================
 
@@ -167,5 +209,25 @@ public class AuthController {
         log.debug("GET /auth/me");
         UserResponse user = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success("User profile retrieved.", user));
+    }
+
+    // =========================================================================
+    // GET /auth/login-history
+    // =========================================================================
+
+    /**
+     * Returns the 10 most recent login attempts for the currently authenticated user.
+     *
+     * <p>Requires a valid Bearer access token. Entries include both successful and
+     * failed attempts, along with the IP address, browser, device, and timestamp
+     * of each attempt — allowing users to identify suspicious activity.
+     *
+     * @return {@code 200 OK} with a list of up to 10 {@link LoginHistoryResponse} DTOs
+     */
+    @GetMapping("/login-history")
+    public ResponseEntity<ApiResponse<List<LoginHistoryResponse>>> loginHistory() {
+        log.debug("GET /auth/login-history");
+        List<LoginHistoryResponse> history = authService.getLoginHistory();
+        return ResponseEntity.ok(ApiResponse.success("Login history retrieved.", history));
     }
 }

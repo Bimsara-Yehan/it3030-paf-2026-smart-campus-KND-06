@@ -2,6 +2,7 @@ package com.smartcampus.repository;
 
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.UserRole;
+import com.smartcampus.enums.TicketCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -106,6 +107,21 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @return a list of active users with the given role; empty list if none found
      */
     List<User> findAllByRoleAndDeletedAtIsNull(UserRole role);
+
+    /**
+     * Returns all active (non-deleted) technicians with a specific specialization.
+     *
+     * <p>Use cases:
+     * <ul>
+     *   <li>Admin assigning a ticket — filters available technicians by the ticket's category.</li>
+     *   <li>Technician availability check — only show technicians who can handle specific ticket types.</li>
+     * </ul>
+     *
+     * @param role the role to filter by (typically TECHNICIAN)
+     * @param specialty the TicketCategory specialization to filter by
+     * @return a list of active technicians with the given specialization; empty list if none found
+     */
+    List<User> findByRoleAndSpecialtyAndDeletedAtIsNull(UserRole role, TicketCategory specialty);
 
     // =========================================================================
     // Aggregate queries

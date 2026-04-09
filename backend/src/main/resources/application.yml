@@ -20,11 +20,11 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: SmartCampusPool
-      maximum-pool-size: 5
-      minimum-idle: 1
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      maximum-pool-size: 5              # Max concurrent DB connections
+      minimum-idle: 1                   # Keep at least 1 connection warm
+      connection-timeout: 30000         # 30 s — fail fast rather than hang
+      idle-timeout: 600000              # 10 min — reclaim idle connections
+      max-lifetime: 1800000             # 30 min — rotate connections proactively
 
   # ── JPA / Hibernate ────────────────────────────────────────────────────────
   jpa:
@@ -88,7 +88,7 @@ spring:
 
 # ── Server ───────────────────────────────────────────────────────────────────
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /api/v1               # All API endpoints are prefixed with /api/v1
 

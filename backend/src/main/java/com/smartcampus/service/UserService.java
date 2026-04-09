@@ -3,6 +3,7 @@ package com.smartcampus.service;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.UserRole;
+import com.smartcampus.enums.TicketCategory;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.UnauthorizedException;
 import com.smartcampus.repository.UserRepository;
@@ -64,6 +65,40 @@ public class UserService {
         return userRepository.findAllByDeletedAtIsNull(
                         org.springframework.data.domain.Pageable.unpaged())
                 .getContent()
+                .stream()
+                .map(UserResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all active users with a specific role.
+     *
+     * @param role the role to filter by
+     * @return a list of {@link UserResponse} DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponse> getUsersByRole(UserRole role) {
+        log.debug("Admin: fetching active users with role: {}", role);
+        return userRepository.findAllByRoleAndDeletedAtIsNull(role)
+                .stream()
+                .map(UserResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all active technicians with a specific specialization.
+     *
+     * <p>Used when assigning tickets to ensure only technicians qualified for
+     * the ticket's category are shown in the assignment dropdown.
+     *
+     * @param specialty the TicketCategory specialization to filter by
+     * @return a list of {@link UserResponse} DTOs for technicians with the matching specialty;
+     *         empty list if no technicians with this specialty exist
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponse> getTechniciansBySpecialty(TicketCategory specialty) {
+        log.debug("Fetching active technicians with specialty: {}", specialty);
+        return userRepository.findByRoleAndSpecialtyAndDeletedAtIsNull(UserRole.TECHNICIAN, specialty)
                 .stream()
                 .map(UserResponse::from)
                 .collect(Collectors.toList());

@@ -31,6 +31,12 @@ interface AuthContextValue {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
   register: (data: RegisterRequest) => Promise<void>;
+  /**
+   * Hydrates auth state directly from tokens + a pre-fetched user object.
+   * Used by OAuthCallbackPage after the Google OAuth2 flow completes —
+   * avoids a full page reload by writing state into the running AuthContext.
+   */
+  loginWithTokens: (accessToken: string, refreshToken: string, user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -87,6 +93,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(auth.user);
   };
 
+  const loginWithTokens = (newAccessToken: string, newRefreshToken: string, newUser: User): void => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+    setAccessToken(newAccessToken);
+    setUser(newUser);
+  };
+
   const logout = (): void => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -114,6 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         logout,
         register,
+        loginWithTokens,
       }}
     >
       {children}

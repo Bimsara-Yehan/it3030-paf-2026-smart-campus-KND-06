@@ -3,9 +3,11 @@ package com.smartcampus.service;
 import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
 import com.smartcampus.dto.response.AuthResponse;
+import com.smartcampus.dto.response.LoginHistoryResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.entity.RefreshToken;
 import com.smartcampus.entity.User;
+import com.smartcampus.enums.LoginStatus;
 import com.smartcampus.enums.UserRole;
 import com.smartcampus.exception.ConflictException;
 import com.smartcampus.exception.ResourceNotFoundException;
@@ -13,6 +15,7 @@ import com.smartcampus.exception.UnauthorizedException;
 import com.smartcampus.repository.RefreshTokenRepository;
 import com.smartcampus.repository.UserRepository;
 import com.smartcampus.security.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,11 +23,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Core authentication service for the Smart Campus Operations Hub.
@@ -61,6 +67,7 @@ public class AuthService {
     private final PasswordEncoder          passwordEncoder;
     private final JwtService               jwtService;
     private final AuthenticationManager    authenticationManager;
+    private final LoginHistoryService      loginHistoryService;
 
     /**
      * Refresh token lifetime in milliseconds, injected from
@@ -143,13 +150,23 @@ public class AuthService {
      * @throws org.springframework.security.authentication.DisabledException if the account is inactive
      */
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         log.info("Login attempt for email: {}", request.getEmail());
 
-        // Delegate to Spring Security — throws AuthenticationException on failure
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        String ipAddress = resolveClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        try {
+            // Delegate to Spring Security — throws AuthenticationException on failure
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (Exception ex) {
+            // Record the failed attempt in its own REQUIRES_NEW transaction so it is
+            // committed even though the outer @Transactional will roll back on the rethrown exception.
+            loginHistoryService.record(null, request.getEmail(), ipAddress, userAgent, LoginStatus.FAILED);
+            throw ex;
+        }
 
         // Authentication succeeded — load the full entity (UserDetails from the manager
         // is sufficient for security, but we need the UUID and other fields for the response)
@@ -159,6 +176,9 @@ public class AuthService {
         // Revoke all existing refresh tokens for this user before issuing new ones.
         // This ensures each login starts with a clean slate.
         refreshTokenRepository.deleteAllByUser(user);
+
+        // Record the successful login attempt
+        loginHistoryService.record(user, request.getEmail(), ipAddress, userAgent, LoginStatus.SUCCESS);
 
         log.debug("Login successful for user id: {}", user.getId());
         return buildAuthResponse(user);
@@ -259,7 +279,34 @@ public class AuthService {
             throw new UnauthorizedException("No authenticated user found in the security context.");
         }
 
-        String email = authentication.getName(); // getName() returns the username (email)
+        // Resolve the email address from the authentication principal.
+        //
+        // Two possible authentication types arrive here:
+        //
+        //  1. UsernamePasswordAuthenticationToken (normal JWT path)
+        //     JwtFilter sets this after validating the Bearer token.
+        //     getName() returns the email because that is what JwtService
+        //     stores as the JWT subject claim.
+        //
+        //  2. OAuth2AuthenticationToken (OAuth2 session still active)
+        //     With SessionCreationPolicy.IF_REQUIRED, Spring Security keeps
+        //     the OAuth2 session alive for a short period after the Google
+        //     callback.  getName() on OAuth2AuthenticationToken delegates to
+        //     OAuth2User.getName(), which returns the nameAttributeKey — for
+        //     Google that is "sub" (the numeric account ID, e.g. 116158…),
+        //     NOT the email.  Looking up a user by that numeric ID always
+        //     fails, producing the "User account not found for email: <sub>"
+        //     error seen in logs.  Fix: read the "email" attribute directly.
+        String email;
+        if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
+            email = (String) oauth2Token.getPrincipal().getAttributes().get("email");
+        } else {
+            email = authentication.getName();
+        }
+
+        if (email == null || email.isBlank()) {
+            throw new UnauthorizedException("Could not resolve email from the current authentication principal.");
+        }
 
         User user = userRepository.findByEmailAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User account not found for email: " + email));
@@ -268,8 +315,44 @@ public class AuthService {
     }
 
     // =========================================================================
+    // Login history
+    // =========================================================================
+
+    /**
+     * Returns the 10 most recent login history entries for the currently
+     * authenticated user.
+     *
+     * @return a list of up to 10 {@link LoginHistoryResponse} DTOs, newest first
+     * @throws UnauthorizedException if there is no authenticated principal
+     * @throws ResourceNotFoundException if the user account no longer exists
+     */
+    @Transactional(readOnly = true)
+    public List<LoginHistoryResponse> getLoginHistory() {
+        UserResponse currentUser = getCurrentUser();
+        return loginHistoryService.getLoginHistory(currentUser.getId());
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
+
+    /**
+     * Resolves the real client IP address from the request, checking the
+     * {@code X-Forwarded-For} header first (set by reverse proxies / load balancers)
+     * and falling back to {@link HttpServletRequest#getRemoteAddr()}.
+     *
+     * @param request the incoming HTTP request
+     * @return the client IP address string, or {@code "unknown"} if not resolvable
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            // X-Forwarded-For may contain a comma-separated chain — the first entry is the client.
+            return forwarded.split(",")[0].trim();
+        }
+        String remoteAddr = request.getRemoteAddr();
+        return (remoteAddr != null && !remoteAddr.isBlank()) ? remoteAddr : "unknown";
+    }
 
     /**
      * Generates a JWT access token and a JWT refresh token for the given user,

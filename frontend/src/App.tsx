@@ -1,5 +1,6 @@
 /**
  * App — application root.
+ * App — application root.
  *
  * Wires together:
  *  - React Query's QueryClientProvider (server-state caching)
@@ -35,15 +36,21 @@ import { UserRole } from '@/types';
 import MainLayout from '@/components/layout/MainLayout';
 
 import LoginPage from '@/pages/auth/LoginPage';
+import RegisterPage from '@/pages/auth/RegisterPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
+import NotificationPreferencesPage from '@/pages/notifications/NotificationPreferencesPage';
 import BookingsPage from '@/pages/bookings/BookingsPage';
+import CreateBookingPage from '@/pages/bookings/CreateBookingPage';
 import TicketsPage from '@/pages/tickets/TicketsPage';
+import TicketDetailPage from '@/pages/tickets/TicketDetailPage';
 import ResourcesPage from '@/pages/resources/ResourcesPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
+import ProfilePage from '@/pages/profile/ProfilePage';
+import LoginHistoryPage from '@/pages/profile/LoginHistoryPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,18 +61,21 @@ const queryClient = new QueryClient({
   },
 });
 
+import ToastContainer from './components/ui/ToastContainer';
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
+          <ToastContainer />
           <Routes>
-            {/* ── Public routes (no auth, no layout) ── */}
-            <Route path="/login" element={<LoginPage />} />
+            {/* ── Public routes ── */}
+            <Route path="/login"     element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 
-            {/* Root redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* ── Protected routes — wrapped in PrivateRoute + MainLayout ── */}
@@ -75,8 +85,15 @@ export default function App() {
                 {/* Available to all authenticated roles */}
                 <Route path="/dashboard"     element={<DashboardPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/bookings"      element={<BookingsPage />} />
+                <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
+                <Route path="/profile"       element={<ProfilePage />} />
+                <Route path="/login-history" element={<LoginHistoryPage />} />
+                
+                {/* Booking Routes */}
+                <Route path="/bookings"        element={<BookingsPage />} />
+                <Route path="/bookings/create" element={<CreateBookingPage />} />
                 <Route path="/tickets"       element={<TicketsPage />} />
+                <Route path="/tickets/:id"   element={<TicketDetailPage />} />
                 <Route path="/resources"     element={<ResourcesPage />} />
 
                 {/* Admin-only routes — RoleRoute enforces the ADMIN role */}
@@ -87,7 +104,6 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AuthProvider>
