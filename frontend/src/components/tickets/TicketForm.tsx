@@ -139,7 +139,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Issue Title*</label>
           <input
             {...register('title', { required: 'Title is required', minLength: { value: 5, message: 'Minimum 5 characters' } })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-gray-900"
             placeholder="E.g., Projector in Room 301 is not working"
           />
           {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title.message}</p>}
@@ -151,7 +151,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Category*</label>
             <select
               {...register('category', { required: 'Category is required' })}
-              className="w-full px-4 py-2 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+              className="w-full px-4 py-2 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-gray-900"
             >
               {['IT_SUPPORT', 'MAINTENANCE', 'CLEANING', 'SECURITY', 'OTHER'].map((cat) => (
                 <option key={cat} value={cat}>
@@ -164,7 +164,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Priority*</label>
             <select
               {...register('priority', { required: 'Priority is required' })}
-              className="w-full px-4 py-2 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+              className="w-full px-4 py-2 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-gray-900"
             >
               {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((pri) => (
                 <option key={pri} value={pri}>
@@ -192,7 +192,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
           <textarea
             {...register('description', { required: 'Description is required', minLength: { value: 10, message: 'Please provide more details' } })}
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow resize-y"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow resize-y text-gray-900"
             placeholder="Please describe the issue in detail to help our technicians resolve it quickly."
           />
           {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>}
@@ -204,7 +204,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact (Optional)</label>
             <input
               {...register('preferredContact')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-gray-900"
               placeholder="Phone number or alternative email"
             />
           </div>

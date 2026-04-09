@@ -38,5 +38,6 @@ public class ResourceAvailability {
     private LocalDateTime availableTo;
 
     @Column(name = "is_active", nullable = false)
+    @lombok.Builder.Default
     private Boolean isActive = true;
 }
