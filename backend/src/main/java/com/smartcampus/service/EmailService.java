@@ -88,6 +88,91 @@ public class EmailService {
     }
 
     // =========================================================================
+    // Booking event emails
+    // =========================================================================
+
+    /** Sent to the user immediately after they submit a booking request. */
+    @Async
+    public void sendBookingConfirmationEmail(String toEmail, String userName,
+                                             String resourceName, String startTime, String endTime) {
+        String html = """
+                <!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f5;padding:32px;">
+                <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
+                  <h2 style="color:#1d4ed8;margin-top:0;">Smart Campus Hub</h2>
+                  <h3 style="color:#111827;">Booking Request Received</h3>
+                  <p style="color:#374151;">Hi <strong>%s</strong>,</p>
+                  <p style="color:#374151;">Your booking request has been submitted and is <strong>pending approval</strong>.</p>
+                  <table style="width:100%%;border-collapse:collapse;margin:16px 0;">
+                    <tr><td style="padding:8px;background:#f9fafb;border-radius:6px;color:#6b7280;font-size:13px;">Resource</td>
+                        <td style="padding:8px;font-weight:600;color:#111827;">%s</td></tr>
+                    <tr><td style="padding:8px;color:#6b7280;font-size:13px;">From</td>
+                        <td style="padding:8px;font-weight:600;color:#111827;">%s</td></tr>
+                    <tr><td style="padding:8px;background:#f9fafb;border-radius:6px;color:#6b7280;font-size:13px;">To</td>
+                        <td style="padding:8px;font-weight:600;color:#111827;">%s</td></tr>
+                  </table>
+                  <p style="color:#374151;">You will receive another email once an administrator reviews your request.</p>
+                  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+                  <p style="color:#9ca3af;font-size:12px;margin:0;">Smart Campus Operations Hub &mdash; IT3030 PAF 2026, SLIIT</p>
+                </div></body></html>
+                """.formatted(userName, resourceName, startTime, endTime);
+
+        sendHtml(toEmail, "Smart Campus — Booking Request Received", html);
+    }
+
+    /** Sent when an admin approves a booking. */
+    @Async
+    public void sendBookingApprovedEmail(String toEmail, String userName,
+                                         String resourceName, String startTime, String endTime) {
+        String html = """
+                <!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f5;padding:32px;">
+                <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
+                  <h2 style="color:#1d4ed8;margin-top:0;">Smart Campus Hub</h2>
+                  <h3 style="color:#16a34a;">Booking Approved</h3>
+                  <p style="color:#374151;">Hi <strong>%s</strong>,</p>
+                  <p style="color:#374151;">Great news! Your booking request has been <strong style="color:#16a34a;">approved</strong>.</p>
+                  <table style="width:100%%;border-collapse:collapse;margin:16px 0;">
+                    <tr><td style="padding:8px;background:#f9fafb;border-radius:6px;color:#6b7280;font-size:13px;">Resource</td>
+                        <td style="padding:8px;font-weight:600;color:#111827;">%s</td></tr>
+                    <tr><td style="padding:8px;color:#6b7280;font-size:13px;">From</td>
+                        <td style="padding:8px;font-weight:600;color:#111827;">%s</td></tr>
+                    <tr><td style="padding:8px;background:#f9fafb;border-radius:6px;color:#6b7280;font-size:13px;">To</td>
+                        <td style="padding:8px;font-weight:600;color:#111827;">%s</td></tr>
+                  </table>
+                  <p style="color:#374151;">Please arrive on time. If you need to cancel, do so from the bookings page.</p>
+                  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+                  <p style="color:#9ca3af;font-size:12px;margin:0;">Smart Campus Operations Hub &mdash; IT3030 PAF 2026, SLIIT</p>
+                </div></body></html>
+                """.formatted(userName, resourceName, startTime, endTime);
+
+        sendHtml(toEmail, "Smart Campus — Booking Approved", html);
+    }
+
+    /** Sent when an admin rejects a booking. */
+    @Async
+    public void sendBookingRejectedEmail(String toEmail, String userName,
+                                          String resourceName, String reason) {
+        String reasonHtml = (reason != null && !reason.isBlank())
+                ? "<p style=\"color:#374151;\"><strong>Reason:</strong> " + reason + "</p>"
+                : "";
+
+        String html = """
+                <!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f5;padding:32px;">
+                <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
+                  <h2 style="color:#1d4ed8;margin-top:0;">Smart Campus Hub</h2>
+                  <h3 style="color:#dc2626;">Booking Not Approved</h3>
+                  <p style="color:#374151;">Hi <strong>%s</strong>,</p>
+                  <p style="color:#374151;">Unfortunately your booking request for <strong>%s</strong> was <strong style="color:#dc2626;">not approved</strong>.</p>
+                  %s
+                  <p style="color:#374151;">You may submit a new request for a different time or resource.</p>
+                  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+                  <p style="color:#9ca3af;font-size:12px;margin:0;">Smart Campus Operations Hub &mdash; IT3030 PAF 2026, SLIIT</p>
+                </div></body></html>
+                """.formatted(userName, resourceName, reasonHtml);
+
+        sendHtml(toEmail, "Smart Campus — Booking Not Approved", html);
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
 

@@ -1,6 +1,7 @@
 package com.smartcampus.service;
 
 import com.smartcampus.dto.request.CreateBookingRequest;
+import java.time.format.DateTimeFormatter;
 import com.smartcampus.entity.Booking;
 import com.smartcampus.entity.Resource;
 import com.smartcampus.entity.User;
@@ -28,6 +29,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
 
@@ -65,7 +67,7 @@ public class BookingService {
                 .build();
 
         Booking saved = bookingRepository.saveAndFlush(booking);
-        
+
         notificationService.sendNotification(
             user,
             "Your booking request for " + resource.getName() + " is pending approval.",
@@ -73,7 +75,15 @@ public class BookingService {
             "BOOKING",
             saved.getId()
         );
-        
+
+        emailService.sendBookingConfirmationEmail(
+            user.getEmail(),
+            user.getName(),
+            resource.getName(),
+            fmt(saved.getStartTime()),
+            fmt(saved.getEndTime())
+        );
+
         return saved;
     }
 
@@ -129,6 +139,15 @@ public class BookingService {
                 "BOOKING",
                 booking.getId()
             );
+
+            emailService.sendBookingApprovedEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                fmt(booking.getStartTime()),
+                fmt(booking.getEndTime())
+            );
+
             return saved;
         } catch (OptimisticLockException e) {
             throw new IllegalStateException("Booking was modified by another user.");
@@ -146,11 +165,20 @@ public class BookingService {
         booking.setRejectionReason(reason);
         
         Booking saved = bookingRepository.save(booking);
+
         notificationService.sendNotification(
                 booking.getUser(),
                 "Your booking has been rejected.",
                 NotificationType.BOOKING_REJECTED
         );
+
+        emailService.sendBookingRejectedEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                reason
+        );
+
         return saved;
     }
 
@@ -173,6 +201,11 @@ public class BookingService {
                 NotificationType.BOOKING_CANCELLED
         );
         return saved;
+    }
+
+    /** Formats a LocalDateTime for display in emails (e.g. "Mon, Apr 09 at 10:00 AM"). */
+    private String fmt(java.time.LocalDateTime dt) {
+        return dt.format(DateTimeFormatter.ofPattern("EEE, MMM dd 'at' hh:mm a"));
     }
 
     /**
