@@ -1,5 +1,6 @@
 package com.smartcampus.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,6 @@ public class CreateBookingRequest {
 
     private Integer attendees;
 
-    @NotNull(message = "Purpose is required.")
+    @NotBlank(message = "Purpose is required.")
     private String purpose;
 }

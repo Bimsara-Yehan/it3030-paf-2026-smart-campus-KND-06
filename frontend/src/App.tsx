@@ -1,6 +1,5 @@
 /**
  * App — application root.
- * App — application root.
  *
  * Wires together:
  *  - React Query's QueryClientProvider (server-state caching)
@@ -38,6 +37,8 @@ import MainLayout from '@/components/layout/MainLayout';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
 
 import DashboardPage from '@/pages/dashboard/DashboardPage';
@@ -51,6 +52,8 @@ import ResourcesPage from '@/pages/resources/ResourcesPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
 import LoginHistoryPage from '@/pages/profile/LoginHistoryPage';
+import SessionsPage from '@/pages/profile/SessionsPage';
+import ToastContainer from '@/components/ui/ToastContainer';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,8 +64,6 @@ const queryClient = new QueryClient({
   },
 });
 
-import ToastContainer from './components/ui/ToastContainer';
-
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -71,10 +72,12 @@ export default function App() {
           <ToastContainer />
           <Routes>
             {/* ── Public routes ── */}
-            <Route path="/login"     element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-            <Route path="/forbidden" element={<ForbiddenPage />} />
+            <Route path="/login"            element={<LoginPage />} />
+            <Route path="/register"         element={<RegisterPage />} />
+            <Route path="/oauth/callback"   element={<OAuthCallbackPage />} />
+            <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
+            <Route path="/reset-password"   element={<ResetPasswordPage />} />
+            <Route path="/forbidden"        element={<ForbiddenPage />} />
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
@@ -88,6 +91,7 @@ export default function App() {
                 <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
                 <Route path="/profile"       element={<ProfilePage />} />
                 <Route path="/login-history" element={<LoginHistoryPage />} />
+                <Route path="/sessions"      element={<SessionsPage />} />
                 
                 {/* Booking Routes */}
                 <Route path="/bookings"        element={<BookingsPage />} />

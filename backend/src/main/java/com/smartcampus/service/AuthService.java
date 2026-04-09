@@ -1,9 +1,14 @@
 package com.smartcampus.service;
 
+import com.smartcampus.dto.request.ForgotPasswordRequest;
 import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
+import com.smartcampus.dto.request.ResetPasswordRequest;
+import com.smartcampus.entity.PasswordResetToken;
+import com.smartcampus.repository.PasswordResetTokenRepository;
 import com.smartcampus.dto.response.AuthResponse;
 import com.smartcampus.dto.response.LoginHistoryResponse;
+import com.smartcampus.dto.response.SessionResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.entity.RefreshToken;
 import com.smartcampus.entity.User;
@@ -62,12 +67,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository           userRepository;
-    private final RefreshTokenRepository   refreshTokenRepository;
-    private final PasswordEncoder          passwordEncoder;
-    private final JwtService               jwtService;
-    private final AuthenticationManager    authenticationManager;
-    private final LoginHistoryService      loginHistoryService;
+    private final UserRepository                userRepository;
+    private final RefreshTokenRepository        refreshTokenRepository;
+    private final PasswordResetTokenRepository  passwordResetTokenRepository;
+    private final PasswordEncoder               passwordEncoder;
+    private final JwtService                    jwtService;
+    private final AuthenticationManager         authenticationManager;
+    private final LoginHistoryService           loginHistoryService;
+    private final EmailService                  emailService;
 
     /**
      * Refresh token lifetime in milliseconds, injected from
@@ -124,7 +131,7 @@ public class AuthService {
         log.debug("User saved with id: {}", user.getId());
 
         // Steps 4–6: generate tokens and build the response
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, null, null);
     }
 
     // =========================================================================
@@ -181,7 +188,7 @@ public class AuthService {
         loginHistoryService.record(user, request.getEmail(), ipAddress, userAgent, LoginStatus.SUCCESS);
 
         log.debug("Login successful for user id: {}", user.getId());
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, userAgent, ipAddress);
     }
 
     // =========================================================================
@@ -221,9 +228,9 @@ public class AuthService {
         storedToken.setRevoked(true);
         refreshTokenRepository.save(storedToken);
 
-        // Issue a completely new token pair
+        // Issue a completely new token pair, carrying device info forward from the old token
         log.debug("Rotating refresh token for user id: {}", user.getId());
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, storedToken.getUserAgent(), storedToken.getIpAddress());
     }
 
     // =========================================================================
@@ -315,6 +322,118 @@ public class AuthService {
     }
 
     // =========================================================================
+    // Forgot / reset password
+    // =========================================================================
+
+    /**
+     * Initiates the password-reset flow for the given email address.
+     *
+     * <p>Security note: this method always returns successfully regardless of
+     * whether the email is registered. This prevents user enumeration — an
+     * attacker cannot tell which addresses have accounts.
+     *
+     * <p>If the email belongs to an active, non-OAuth account:
+     * <ol>
+     *   <li>Any existing reset tokens for the user are deleted (one active token at a time).</li>
+     *   <li>A new single-use token (UUID) is created with a 15-minute expiry.</li>
+     *   <li>An email containing the reset link is sent asynchronously.</li>
+     * </ol>
+     *
+     * @param request contains the user's email address
+     */
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())
+                .filter(user -> user.getPasswordHash() != null) // skip OAuth-only accounts
+                .ifPresent(user -> {
+                    // Revoke any pending tokens before issuing a new one
+                    passwordResetTokenRepository.deleteAllByUserId(user.getId());
+
+                    String tokenValue = java.util.UUID.randomUUID().toString();
+
+                    PasswordResetToken resetToken = PasswordResetToken.builder()
+                            .user(user)
+                            .token(tokenValue)
+                            .expiresAt(java.time.LocalDateTime.now().plusMinutes(15))
+                            .build();
+
+                    passwordResetTokenRepository.save(resetToken);
+                    emailService.sendPasswordResetEmail(user.getEmail(), tokenValue);
+                    log.info("Password reset email dispatched for user {}", user.getId());
+                });
+    }
+
+    /**
+     * Completes the password-reset flow by verifying the token and updating the password.
+     *
+     * @param request contains the reset token and the desired new password
+     * @throws com.smartcampus.exception.UnauthorizedException if the token is invalid,
+     *         expired, or already used
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByToken(request.getToken())
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired reset link."));
+
+        if (resetToken.isExpired()) {
+            throw new UnauthorizedException("This reset link has expired. Please request a new one.");
+        }
+        if (resetToken.isUsed()) {
+            throw new UnauthorizedException("This reset link has already been used.");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Mark the token as consumed so it cannot be replayed
+        resetToken.setUsedAt(java.time.LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
+
+        // Revoke all refresh tokens — forces re-login on all devices
+        refreshTokenRepository.deleteAllByUser(user);
+
+        log.info("Password reset completed for user {}", user.getId());
+    }
+
+    // =========================================================================
+    // Change password
+    // =========================================================================
+
+    /**
+     * Changes the password of the currently authenticated user.
+     *
+     * <p>Verifies that {@code currentPassword} matches the stored hash before
+     * applying the change. OAuth-only accounts (where {@code passwordHash} is
+     * {@code null}) are rejected because they have no local password to verify against.
+     *
+     * @param userId          the UUID of the authenticated user
+     * @param currentPassword the user's existing password (plaintext, verified against stored hash)
+     * @param newPassword     the desired new password (plaintext, will be BCrypt-hashed)
+     * @throws UnauthorizedException     if {@code currentPassword} does not match the stored hash,
+     *                                   or if the account is an OAuth-only account with no local password
+     * @throws ResourceNotFoundException if the user account no longer exists
+     */
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        if (user.getPasswordHash() == null) {
+            throw new UnauthorizedException("OAuth accounts cannot change their password here.");
+        }
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new UnauthorizedException("Current password is incorrect.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Password changed successfully for user {}", userId);
+    }
+
+    // =========================================================================
     // Login history
     // =========================================================================
 
@@ -354,6 +473,35 @@ public class AuthService {
         return (remoteAddr != null && !remoteAddr.isBlank()) ? remoteAddr : "unknown";
     }
 
+    // =========================================================================
+    // Active session management
+    // =========================================================================
+
+    /**
+     * Returns all active (non-revoked, non-expired) sessions for the given user.
+     */
+    @Transactional(readOnly = true)
+    public List<SessionResponse> getActiveSessions(UUID userId) {
+        return refreshTokenRepository
+                .findByUser_IdAndRevokedFalseAndExpiresAtAfter(userId, LocalDateTime.now())
+                .stream()
+                .map(SessionResponse::from)
+                .toList();
+    }
+
+    /**
+     * Revokes a single session by its token ID.
+     * Only the owning user can revoke their own sessions.
+     */
+    @Transactional
+    public void revokeSession(UUID tokenId, UUID userId) {
+        RefreshToken token = refreshTokenRepository.findByIdAndUser_Id(tokenId, userId)
+                .orElseThrow(() -> new UnauthorizedException("Session not found."));
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+        log.debug("Session {} revoked by user {}", tokenId, userId);
+    }
+
     /**
      * Generates a JWT access token and a JWT refresh token for the given user,
      * persists the refresh token in the database, and assembles the full
@@ -365,7 +513,7 @@ public class AuthService {
      * @param user the authenticated user for whom tokens are being issued
      * @return a complete {@link AuthResponse} ready to be returned to the client
      */
-    private AuthResponse buildAuthResponse(User user) {
+    private AuthResponse buildAuthResponse(User user, String userAgent, String ipAddress) {
         // Generate both tokens via JwtService
         String accessToken  = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -380,6 +528,8 @@ public class AuthService {
                 .user(user)
                 .expiresAt(expiresAt)
                 .revoked(false)
+                .userAgent(userAgent)
+                .ipAddress(ipAddress)
                 .build();
         refreshTokenRepository.save(tokenEntity);
 

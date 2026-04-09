@@ -1,11 +1,13 @@
 package com.smartcampus.service;
 
 import com.smartcampus.dto.request.CreateBookingRequest;
+import java.time.format.DateTimeFormatter;
 import com.smartcampus.entity.Booking;
 import com.smartcampus.entity.Resource;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.BookingStatus;
 import com.smartcampus.enums.NotificationType;
+import com.smartcampus.enums.UserRole;
 import com.smartcampus.repository.BookingRepository;
 import com.smartcampus.repository.ResourceRepository;
 import com.smartcampus.repository.UserRepository;
@@ -28,6 +30,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
 
@@ -95,6 +98,36 @@ public class BookingService {
             // Notification failure must not roll back a successful booking
         }
 
+        // Notify all admins so they know a new booking needs review
+        String adminMessage = user.getName() + " requested " + resource.getName()
+                + " from " + fmt(saved.getStartTime()) + " to " + fmt(saved.getEndTime()) + ".";
+        userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
+                .forEach(admin -> {
+                    notificationService.sendNotification(
+                            admin,
+                            adminMessage,
+                            NotificationType.SYSTEM_ANNOUNCEMENT,
+                            "BOOKING",
+                            saved.getId()
+                    );
+                    emailService.sendNewBookingRequestEmail(
+                            admin.getEmail(),
+                            admin.getName(),
+                            user.getName(),
+                            resource.getName(),
+                            fmt(saved.getStartTime()),
+                            fmt(saved.getEndTime())
+                    );
+                });
+
+        emailService.sendBookingConfirmationEmail(
+            user.getEmail(),
+            user.getName(),
+            resource.getName(),
+            fmt(saved.getStartTime()),
+            fmt(saved.getEndTime())
+        );
+
         return saved;
     }
 
@@ -150,6 +183,15 @@ public class BookingService {
                 "BOOKING",
                 booking.getId()
             );
+
+            emailService.sendBookingApprovedEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                fmt(booking.getStartTime()),
+                fmt(booking.getEndTime())
+            );
+
             return saved;
         } catch (OptimisticLockException e) {
             throw new IllegalStateException("Booking was modified by another user.");
@@ -167,11 +209,20 @@ public class BookingService {
         booking.setRejectionReason(reason);
         
         Booking saved = bookingRepository.save(booking);
+
         notificationService.sendNotification(
                 booking.getUser(),
                 "Your booking has been rejected.",
                 NotificationType.BOOKING_REJECTED
         );
+
+        emailService.sendBookingRejectedEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                reason
+        );
+
         return saved;
     }
 
@@ -193,7 +244,21 @@ public class BookingService {
                 "Your booking has been cancelled.",
                 NotificationType.BOOKING_CANCELLED
         );
+
+        emailService.sendBookingCancelledEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                fmt(booking.getStartTime()),
+                fmt(booking.getEndTime())
+        );
+
         return saved;
+    }
+
+    /** Formats a LocalDateTime for display in emails (e.g. "Mon, Apr 09 at 10:00 AM"). */
+    private String fmt(java.time.LocalDateTime dt) {
+        return dt.format(DateTimeFormatter.ofPattern("EEE, MMM dd 'at' hh:mm a"));
     }
 
     /**

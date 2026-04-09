@@ -105,6 +105,16 @@ public class RefreshToken {
     @Builder.Default
     private boolean revoked = false;
 
+    // ── Device info ───────────────────────────────────────────────────────────
+
+    /** The User-Agent string of the browser/client that created this session. Nullable for legacy rows. */
+    @Column(name = "user_agent", length = 500)
+    private String userAgent;
+
+    /** The IP address of the client that created this session. Nullable for legacy rows. */
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
     // ── Audit timestamp ───────────────────────────────────────────────────────
 
     /**

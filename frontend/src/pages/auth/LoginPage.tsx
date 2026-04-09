@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   /** Redirect to Spring Security's OAuth2 authorisation endpoint for Google. */
   const handleGoogleLogin = () => {
-    window.location.href = '/api/v1/auth/oauth2/google';
+    window.location.href = 'http://localhost:8081/api/v1/auth/oauth2/google';
   };
 
   return (
@@ -90,9 +90,14 @@ export default function LoginPage() {
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"

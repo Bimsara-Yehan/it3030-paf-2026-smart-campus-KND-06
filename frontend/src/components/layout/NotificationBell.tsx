@@ -8,33 +8,35 @@
  * (e.g. network issue, token expired, browser not supporting EventSource).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient, { ACCESS_TOKEN_KEY } from '@/api/axiosClient';
 import type { ApiResponse } from '@/types';
 
 /** Fallback polling interval (ms) used only when SSE is unavailable. */
 const POLL_INTERVAL_MS = 30_000;
+const BASE_URL = 'http://localhost:8081/api/v1';
 
 export default function NotificationBell() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  /** Fetch the current unread count via REST (used as initial load + fallback). */
+  const fetchCount = async () => {
+    try {
+      const { data } = await axiosClient.get<ApiResponse<number>>(
+        '/notifications/unread-count',
+      );
+      // Backend returns ApiResponse<Long> — data.data is a plain number
+      const count = typeof data.data === 'number' ? data.data : 0;
+      setUnreadCount(count);
+    } catch {
+      // Silently swallow — a stale badge is acceptable
+    }
+  };
 
   useEffect(() => {
-    /** Fetch the current unread notification count from the backend. */
-    const fetchCount = async () => {
-      try {
-        const { data } = await axiosClient.get<ApiResponse<number>>(
-          '/notifications/unread-count',
-        );
-        // Backend returns ApiResponse<Long> — data.data is a plain number
-        const count = typeof data.data === 'number' ? data.data : 0;
-        setUnreadCount(count);
-      } catch {
-        // Silently swallow — a stale badge is acceptable
-      }
-    };
-
     // Fetch immediately on mount
     fetchCount();
 
@@ -53,8 +55,9 @@ export default function NotificationBell() {
     try {
       // Open SSE stream — JWT passed as query param because EventSource
       // cannot set the Authorization header
-      const sseUrl = `/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
+      const sseUrl = `${BASE_URL}/notifications/stream?token=${encodeURIComponent(token)}`;
       eventSource = new EventSource(sseUrl);
+      eventSourceRef.current = eventSource;
 
       // A new notification arrived — refresh the badge count immediately
       eventSource.addEventListener('notification', () => {
@@ -65,6 +68,7 @@ export default function NotificationBell() {
       eventSource.onerror = () => {
         eventSource?.close();
         eventSource = null;
+        eventSourceRef.current = null;
         startPollingFallback();
       };
     } catch {
@@ -74,6 +78,10 @@ export default function NotificationBell() {
 
     return () => {
       eventSource?.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       if (pollFallback) clearInterval(pollFallback);
     };
   }, []);

@@ -1,5 +1,6 @@
 package com.smartcampus.config;
 
+import com.smartcampus.security.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.smartcampus.security.JwtFilter;
 import com.smartcampus.security.OAuth2FailureHandler;
 import com.smartcampus.security.OAuth2SuccessHandler;
@@ -62,17 +63,24 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtFilter             jwtFilter;
-    private final UserDetailsService    userDetailsService;
-    private final OAuth2SuccessHandler  oAuth2SuccessHandler;
-    private final OAuth2FailureHandler  oAuth2FailureHandler;
+    private final JwtFilter                                      jwtFilter;
+    private final UserDetailsService                             userDetailsService;
+    private final OAuth2SuccessHandler                           oAuth2SuccessHandler;
+    private final OAuth2FailureHandler                           oAuth2FailureHandler;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepository;
 
     // ── Public endpoint matchers ──────────────────────────────────────────────
     // Paths listed here are fully public — no JWT required.
     // Note: these are relative to the context-path (/api/v1) set in application.yml,
     // so "/auth/**" here matches actual requests to "/api/v1/auth/**".
     private static final String[] PUBLIC_POST_PATHS = {
-            "/auth/**"                  // login, register, OAuth callback, token refresh
+            "/auth/login",              // email + password login — no token yet
+            "/auth/register",           // new account creation — no token yet
+            "/auth/refresh",            // exchange refresh token for new access token
+            "/auth/logout",             // revoke refresh token — token may already be expired
+            "/auth/forgot-password",    // initiate password reset — no token yet
+            "/auth/reset-password"      // complete password reset — token is the auth mechanism
+            // NOTE: /auth/change-password is intentionally excluded — it requires a valid JWT
     };
 
     private static final String[] PUBLIC_GET_PATHS = {
@@ -169,9 +177,16 @@ public class SecurityConfig {
 
                 // ── OAuth2 Login ──────────────────────────────────────────────
                 // Wire up Google OAuth2 login with our custom handlers.
+                // authorizationRequestRepository: stores the OAuth2 state in a cookie
+                //   instead of the HTTP session, preventing authorization_request_not_found
+                //   errors that occur when the session is lost between the redirect to
+                //   Google and the callback from Google.
                 // successHandler: issues JWT tokens and redirects to the React callback page.
                 // failureHandler: redirects to the React login page with an error flag.
                 .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestRepository(cookieAuthRequestRepository)
+                        )
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler(oAuth2FailureHandler)
                 )

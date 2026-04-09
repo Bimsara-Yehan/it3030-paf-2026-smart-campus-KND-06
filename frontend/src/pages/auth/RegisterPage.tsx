@@ -148,7 +148,7 @@ export default function RegisterPage() {
 
   /** Kick off the Spring Security Google OAuth2 flow — same path as LoginPage. */
   const handleGoogleLogin = () => {
-    window.location.href = '/api/v1/auth/oauth2/google';
+    window.location.href = 'http://localhost:8081/api/v1/auth/oauth2/google';
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
