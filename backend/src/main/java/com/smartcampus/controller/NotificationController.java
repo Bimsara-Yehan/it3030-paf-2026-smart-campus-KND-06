@@ -6,11 +6,14 @@ import com.smartcampus.dto.response.NotificationResponse;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.NotificationType;
 import com.smartcampus.service.NotificationService;
+import com.smartcampus.service.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,31 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final SseEmitterService   sseEmitterService;
+
+    // =========================================================================
+    // GET /notifications/stream  — SSE real-time push
+    // =========================================================================
+
+    /**
+     * Opens a Server-Sent Events stream for the current user.
+     *
+     * <p>The browser connects once and keeps the stream open. Whenever a new
+     * notification is created for this user, {@link SseEmitterService} pushes a
+     * {@code notification} event whose data is the new unread count as a plain string.
+     *
+     * <p>Because browser {@code EventSource} cannot set custom HTTP headers, the JWT
+     * must be supplied via the {@code ?token=} query parameter. {@link com.smartcampus.security.JwtFilter}
+     * is already updated to accept this fallback.
+     *
+     * @param currentUser the authenticated user, resolved from the JWT query param by JwtFilter
+     * @return an SSE stream (text/event-stream) that stays open until timeout or disconnect
+     */
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamNotifications(@AuthenticationPrincipal User currentUser) {
+        log.debug("SSE /notifications/stream — user: {}", currentUser.getId());
+        return sseEmitterService.createEmitter(currentUser.getId());
+    }
 
     // =========================================================================
     // GET /notifications

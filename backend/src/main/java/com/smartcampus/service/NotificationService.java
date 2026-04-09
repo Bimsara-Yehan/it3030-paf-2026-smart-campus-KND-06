@@ -49,6 +49,7 @@ public class NotificationService {
 
     private final NotificationRepository           notificationRepository;
     private final NotificationPreferenceRepository preferenceRepository;
+    private final SseEmitterService                sseEmitterService;
 
     // =========================================================================
     // Public API for other modules — sendNotification
@@ -106,6 +107,10 @@ public class NotificationService {
 
         notificationRepository.save(notification);
         log.debug("Notification [{}] created for user {}", type, user.getId());
+
+        // Push a real-time event to the user's SSE stream (if they are connected)
+        long newCount = notificationRepository.countByUserIdAndReadAtIsNull(user.getId());
+        sseEmitterService.sendToUser(user.getId(), String.valueOf(newCount));
     }
 
     // =========================================================================

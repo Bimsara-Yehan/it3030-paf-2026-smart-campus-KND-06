@@ -7,6 +7,7 @@ import com.smartcampus.entity.Resource;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.BookingStatus;
 import com.smartcampus.enums.NotificationType;
+import com.smartcampus.enums.UserRole;
 import com.smartcampus.repository.BookingRepository;
 import com.smartcampus.repository.ResourceRepository;
 import com.smartcampus.repository.UserRepository;
@@ -75,6 +76,18 @@ public class BookingService {
             "BOOKING",
             saved.getId()
         );
+
+        // Notify all admins so they know a new booking needs review
+        String adminMessage = user.getName() + " requested " + resource.getName()
+                + " from " + fmt(saved.getStartTime()) + " to " + fmt(saved.getEndTime()) + ".";
+        userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
+                .forEach(admin -> notificationService.sendNotification(
+                        admin,
+                        adminMessage,
+                        NotificationType.SYSTEM_ANNOUNCEMENT,
+                        "BOOKING",
+                        saved.getId()
+                ));
 
         emailService.sendBookingConfirmationEmail(
             user.getEmail(),

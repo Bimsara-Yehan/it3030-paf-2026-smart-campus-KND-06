@@ -1,50 +1,86 @@
 /**
- * NotificationBell — polling unread-count indicator in the topbar.
+ * NotificationBell — real-time unread-count indicator in the topbar.
  *
- * Fetches GET /notifications/unread-count every 30 seconds and shows
- * a red badge when there are unread notifications. Clicking navigates
- * to /notifications. The interval is cleared on unmount to prevent
- * state updates on an unmounted component.
+ * Connects to GET /notifications/stream (SSE) to receive instant push
+ * updates whenever a new notification is created for the logged-in user.
+ * The SSE event data is the new total unread count as a plain string.
+ *
+ * Because browser EventSource cannot send custom headers, the JWT is
+ * passed as a `?token=` query parameter — the backend JwtFilter accepts
+ * this as a fallback for SSE connections.
+ *
+ * Falls back to polling every 30 seconds as a safety net (e.g. if the
+ * SSE stream fails to connect in environments that don't support it).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosClient from '../../api/axiosClient';
+import axiosClient, { ACCESS_TOKEN_KEY } from '../../api/axiosClient';
 import type { ApiResponse } from '../../types';
 
-/** Shape of the unread-count API data payload. */
-interface UnreadCountData {
-  count: number;
-}
-
-/** How often (ms) to re-fetch the unread count. */
 const POLL_INTERVAL_MS = 30_000;
+const BASE_URL = 'http://localhost:8081/api/v1';
 
 export default function NotificationBell() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  /** Fetch the current unread count via REST (used as initial load + fallback). */
+  const fetchCount = async () => {
+    try {
+      const { data } = await axiosClient.get<ApiResponse<number>>(
+        '/notifications/unread-count',
+      );
+      // The API wraps the count in data.data — it may be a plain number
+      const raw = data.data as unknown;
+      const count = typeof raw === 'number' ? raw : (raw as { count?: number })?.count ?? 0;
+      setUnreadCount(count);
+    } catch {
+      // Silently swallow — a stale badge is acceptable
+    }
+  };
 
   useEffect(() => {
-    /** Fetch the current unread notification count from the backend. */
-    const fetchCount = async () => {
-      try {
-        const { data } = await axiosClient.get<ApiResponse<UnreadCountData>>(
-          '/notifications/unread-count',
-        );
-        setUnreadCount(data.data.count);
-      } catch {
-        // Silently swallow errors — a stale badge is acceptable,
-        // and flooding the console on every poll would be noisy.
-      }
-    };
-
-    // Fetch immediately, then start the polling interval.
+    // Initial fetch so the badge is correct before SSE connects
     fetchCount();
+
+    // ── SSE connection ─────────────────────────────────────────────────────
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (token) {
+      const url = `${BASE_URL}/notifications/stream?token=${encodeURIComponent(token)}`;
+      const es = new EventSource(url);
+      eventSourceRef.current = es;
+
+      es.addEventListener('connected', () => {
+        // Stream is live — re-fetch to sync count immediately
+        fetchCount();
+      });
+
+      es.addEventListener('notification', (e: MessageEvent) => {
+        // Event data is the new unread count as a plain string
+        const count = parseInt(e.data, 10);
+        if (!isNaN(count)) {
+          setUnreadCount(count);
+        }
+      });
+
+      es.onerror = () => {
+        // Browser will auto-reconnect after a delay — no action needed here
+      };
+    }
+
+    // ── Fallback polling (keeps badge fresh if SSE is unavailable) ─────────
     const intervalId = setInterval(fetchCount, POLL_INTERVAL_MS);
 
-    // Clean up the interval when the component unmounts so we don't
-    // attempt to update state on an unmounted component.
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
