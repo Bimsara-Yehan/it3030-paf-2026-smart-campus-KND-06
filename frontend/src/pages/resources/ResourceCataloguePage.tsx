@@ -2,23 +2,37 @@ import React, { useState } from 'react';
 import { useResources } from '../../hooks/useResources';
 import { ResourceCard } from '../../components/resources/ResourceCard';
 import { ResourceFilter } from '../../components/resources/ResourceFilter';
+import { CreateResourceModal } from '../../components/resources/CreateResourceModal';
 
 export const ResourceCataloguePage: React.FC = () => {
     const [filterType, setFilterType] = useState<string>('');
     const [filterCapacity, setFilterCapacity] = useState<number>(0);
     const [filterLocation, setFilterLocation] = useState<string>('');
+    const [naturalQuery, setNaturalQuery] = useState<string>('');
+    
+    // Manage modal visibility
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // Custom hook bringing in the data from the backend!
-    const { resources, loading, error } = useResources(filterType, filterCapacity, filterLocation);
+    const { resources, loading, error, refetch } = useResources(filterType, filterCapacity, filterLocation, naturalQuery);
 
-    const handleFilterChange = (type: string, capacity: number, location: string) => {
-        if(type) setFilterType(type);
-        if(capacity) setFilterCapacity(capacity);
-        if(location) setFilterLocation(location);
+    const handleFilterChange = (type: string, capacity: number, location: string, natQ?: string) => {
+        setFilterType(type || '');
+        setFilterCapacity(capacity || 0);
+        setFilterLocation(location || '');
+        setNaturalQuery(natQ || '');
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0c] text-gray-200 p-8 pt-12">
+        <div className="min-h-screen bg-[#0a0a0c] text-gray-200 p-8 pt-12 relative">
+            
+            {/* Modal Injection */}
+            <CreateResourceModal 
+                isOpen={isCreateModalOpen} 
+                onClose={() => setIsCreateModalOpen(false)} 
+                onSuccess={() => refetch()} 
+            />
+
             <div className="max-w-7xl mx-auto">
                 
                 {/* Header Section */}
@@ -31,8 +45,11 @@ export const ResourceCataloguePage: React.FC = () => {
                             Browse and retrieve detailed metadata on lecture halls, laboratories, meeting rooms, and shared equipment available across the campus grid.
                         </p>
                     </div>
-                    {/* Add button placeholder for Admin Form */}
-                    <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all">
+                    {/* Trigger button for Admin Form */}
+                    <button 
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all"
+                    >
                         + New Resource
                     </button>
                 </div>

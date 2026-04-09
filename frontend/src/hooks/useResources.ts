@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { fetchResources, ResourceResponse } from '../api/resourceApi';
+import type { ResourceResponse } from '../api/resourceApi';
+import { fetchResources } from '../api/resourceApi';
 
-export const useResources = (type?: string, minCapacity?: number, location?: string) => {
+export const useResources = (type?: string, minCapacity?: number, location?: string, naturalQuery?: string) => {
     const [resources, setResources] = useState<ResourceResponse[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -9,11 +10,12 @@ export const useResources = (type?: string, minCapacity?: number, location?: str
     const loadResources = async () => {
         try {
             setLoading(true);
-            const data = await fetchResources(type, minCapacity, location);
+            const data = await fetchResources(type, minCapacity, location, naturalQuery);
             setResources(data);
             setError(null);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch resources');
+            setError(err.response?.data?.message || 'Failed to fetch catalogue');
+            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -22,7 +24,7 @@ export const useResources = (type?: string, minCapacity?: number, location?: str
     // Load data immediately when component mounts or filter params change
     useEffect(() => {
         loadResources();
-    }, [type, minCapacity, location]);
+    }, [type, minCapacity, location, naturalQuery]);
 
     return { resources, loading, error, refetch: loadResources };
 };

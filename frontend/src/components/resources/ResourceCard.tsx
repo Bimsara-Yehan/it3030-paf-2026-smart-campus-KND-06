@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResourceResponse } from '../../api/resourceApi';
+import type { ResourceResponse } from '../../api/resourceApi';
 import { ResourceBadge } from './ResourceBadge';
 
 interface ResourceCardProps {
@@ -39,8 +39,12 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
                 {/* Specs Box */}
                 <div className="grid grid-cols-2 gap-4 mt-auto border-t border-gray-800/60 pt-5">
                     <div className="flex flex-col">
-                        <span className="text-xs text-gray-500 uppercase tracking-wider mb-1">Capacity</span>
-                        <span className="text-sm text-gray-300 font-medium">{resource.capacity || 'N/A'} Seats</span>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                            {resource.type === 'EQUIPMENT' ? 'Quantity' : 'Capacity'}
+                        </span>
+                        <span className="text-sm text-gray-300 font-medium">
+                            {resource.capacity || 'N/A'} {resource.type === 'EQUIPMENT' ? 'Units' : 'Seats'}
+                        </span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-xs text-gray-500 uppercase tracking-wider mb-1">Location</span>
