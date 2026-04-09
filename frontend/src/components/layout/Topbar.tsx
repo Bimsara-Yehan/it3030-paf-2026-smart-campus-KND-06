@@ -10,8 +10,8 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import NotificationBell from './NotificationBell';
+import { useAuth } from '@/context/AuthContext';
+import NotificationBell from '@/components/layout/NotificationBell';
 
 export default function Topbar() {
   const { user, logout } = useAuth();

@@ -1,19 +1,11 @@
 package com.smartcampus.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
-/**
- * Entity representing when a resource is actually available for booking.
- * Created by Member 2 (Booking Module).
- */
 @Entity
 @Table(name = "resource_availability")
 @Getter
@@ -31,12 +23,12 @@ public class ResourceAvailability {
     @JoinColumn(name = "resource_id", nullable = false)
     private Resource resource;
 
-    @Column(name = "available_from", nullable = false)
-    private LocalDateTime availableFrom;
+    @Column(name = "day_of_week", nullable = false, length = 3)
+    private String dayOfWeek; // MON | TUE | WED | THU | FRI | SAT | SUN
 
-    @Column(name = "available_to", nullable = false)
-    private LocalDateTime availableTo;
+    @Column(name = "start_time", nullable = false)
+    private LocalTime startTime;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Column(name = "end_time", nullable = false)
+    private LocalTime endTime;
 }

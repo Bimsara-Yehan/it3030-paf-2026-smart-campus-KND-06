@@ -9,8 +9,8 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosClient from '../../api/axiosClient';
-import type { ApiResponse } from '../../types';
+import axiosClient from '@/api/axiosClient';
+import type { ApiResponse } from '@/types';
 
 /** Shape of the unread-count API data payload. */
 interface UnreadCountData {
