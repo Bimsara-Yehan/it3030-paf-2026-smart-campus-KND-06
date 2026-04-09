@@ -121,19 +121,23 @@ public class JwtFilter extends OncePerRequestFilter {
         // ── Step 1: Read the Authorization header ──────────────────────────────
         final String authHeader = request.getHeader(AUTH_HEADER);
 
-        // ── Step 2: Validate the header format ────────────────────────────────
-        // If the header is missing or does not start with "Bearer ", there is no
-        // JWT to process. Pass the request through — Spring Security will enforce
-        // authentication on protected endpoints after the filter chain completes.
-        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
-            log.trace("No Bearer token found in request to: {}", request.getServletPath());
-            filterChain.doFilter(request, response);
-            return;
+        // ── Step 2 & 3: Extract the raw JWT string ─────────────────────────────
+        // Primary path:  Authorization: Bearer <token>  (all normal API calls).
+        // Fallback path: ?token= query param — required for SSE EventSource because
+        //                the browser EventSource API cannot set custom request headers.
+        final String jwt;
+        if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+            jwt = authHeader.substring(BEARER_PREFIX.length());
+        } else {
+            String tokenParam = request.getParameter("token");
+            if (tokenParam != null && !tokenParam.isEmpty()) {
+                jwt = tokenParam;
+            } else {
+                log.trace("No Bearer token found in request to: {}", request.getServletPath());
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
-
-        // ── Step 3: Extract the raw JWT string ────────────────────────────────
-        // Strip the "Bearer " prefix (7 characters) to get the token itself.
-        final String jwt = authHeader.substring(BEARER_PREFIX.length());
 
         try {
             // ── Step 4: Extract the user email from the token ─────────────────

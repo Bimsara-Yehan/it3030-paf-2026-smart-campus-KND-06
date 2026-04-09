@@ -5,6 +5,8 @@ import type { BookingStatus as BookingStatusType } from '../../types';
 import axiosClient from '../../api/axiosClient';
 import type { ApiResponse, Booking } from '../../types';
 import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
+import CalendarBookingView from '../../components/bookings/CalendarBookingView';
+import ResourceSelector from '../../components/bookings/ResourceSelector';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +17,9 @@ const BookingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<BookingStatusType | 'ALL'>('ALL');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
+  const [selectedResourceName, setSelectedResourceName] = useState<string | null>(null);
 
   const isAdmin = user?.role === UserRole.ADMIN;
 
@@ -102,6 +107,49 @@ const BookingsPage: React.FC = () => {
         </div>
       )}
 
+      {/* View Mode Tabs */}
+      <div className="flex items-center gap-2 bg-white/50 backdrop-blur-md p-1 rounded-xl border border-white/20 shadow-sm w-fit">
+        <button
+          onClick={() => setViewMode('list')}
+          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${
+            viewMode === 'list'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+          }`}
+        >
+          📊 List View
+        </button>
+        <button
+          onClick={() => setViewMode('calendar')}
+          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${
+            viewMode === 'calendar'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+          }`}
+        >
+          📅 Calendar View
+        </button>
+      </div>
+
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <div className="space-y-4">
+          <ResourceSelector
+            onResourceChange={(id, name) => {
+              setSelectedResourceId(id);
+              setSelectedResourceName(name);
+            }}
+          />
+          <CalendarBookingView
+            resourceId={selectedResourceId}
+            resourceName={selectedResourceName ?? undefined}
+          />
+        </div>
+      )}
+
+      {/* List View — all existing UI below is preserved exactly */}
+      {viewMode === 'list' && (
+        <>
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 bg-white/50 backdrop-blur-md p-1 rounded-xl border border-white/20 shadow-sm overflow-x-auto no-scrollbar">
         {(['ALL', ...Object.values(BookingStatus)] as (BookingStatusType | 'ALL')[]).map((s) => (
@@ -205,6 +253,8 @@ const BookingsPage: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

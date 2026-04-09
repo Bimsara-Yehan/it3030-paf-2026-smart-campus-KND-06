@@ -1,23 +1,19 @@
 /**
- * NotificationBell — polling unread-count indicator in the topbar.
+ * NotificationBell — real-time unread-count indicator in the topbar.
  *
- * Fetches GET /notifications/unread-count every 30 seconds and shows
- * a red badge when there are unread notifications. Clicking navigates
- * to /notifications. The interval is cleared on unmount to prevent
- * state updates on an unmounted component.
+ * Opens a Server-Sent Events stream to GET /notifications/stream so the badge
+ * updates instantly when a new notification arrives — no polling delay.
+ *
+ * Falls back to 30-second polling automatically if the SSE connection fails
+ * (e.g. network issue, token expired, browser not supporting EventSource).
  */
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosClient from '@/api/axiosClient';
+import axiosClient, { ACCESS_TOKEN_KEY } from '@/api/axiosClient';
 import type { ApiResponse } from '@/types';
 
-/** Shape of the unread-count API data payload. */
-interface UnreadCountData {
-  count: number;
-}
-
-/** How often (ms) to re-fetch the unread count. */
+/** Fallback polling interval (ms) used only when SSE is unavailable. */
 const POLL_INTERVAL_MS = 30_000;
 
 export default function NotificationBell() {
@@ -28,23 +24,58 @@ export default function NotificationBell() {
     /** Fetch the current unread notification count from the backend. */
     const fetchCount = async () => {
       try {
-        const { data } = await axiosClient.get<ApiResponse<UnreadCountData>>(
+        const { data } = await axiosClient.get<ApiResponse<number>>(
           '/notifications/unread-count',
         );
-        setUnreadCount(data.data.count);
+        // Backend returns ApiResponse<Long> — data.data is a plain number
+        const count = typeof data.data === 'number' ? data.data : 0;
+        setUnreadCount(count);
       } catch {
-        // Silently swallow errors — a stale badge is acceptable,
-        // and flooding the console on every poll would be noisy.
+        // Silently swallow — a stale badge is acceptable
       }
     };
 
-    // Fetch immediately, then start the polling interval.
+    // Fetch immediately on mount
     fetchCount();
-    const intervalId = setInterval(fetchCount, POLL_INTERVAL_MS);
 
-    // Clean up the interval when the component unmounts so we don't
-    // attempt to update state on an unmounted component.
-    return () => clearInterval(intervalId);
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) return;
+
+    let eventSource: EventSource | null = null;
+    let pollFallback: ReturnType<typeof setInterval> | null = null;
+
+    const startPollingFallback = () => {
+      if (!pollFallback) {
+        pollFallback = setInterval(fetchCount, POLL_INTERVAL_MS);
+      }
+    };
+
+    try {
+      // Open SSE stream — JWT passed as query param because EventSource
+      // cannot set the Authorization header
+      const sseUrl = `/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
+      eventSource = new EventSource(sseUrl);
+
+      // A new notification arrived — refresh the badge count immediately
+      eventSource.addEventListener('notification', () => {
+        fetchCount();
+      });
+
+      // SSE connection error → fall back to polling
+      eventSource.onerror = () => {
+        eventSource?.close();
+        eventSource = null;
+        startPollingFallback();
+      };
+    } catch {
+      // EventSource constructor threw (shouldn't happen in modern browsers)
+      startPollingFallback();
+    }
+
+    return () => {
+      eventSource?.close();
+      if (pollFallback) clearInterval(pollFallback);
+    };
   }, []);
 
   return (

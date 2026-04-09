@@ -36,9 +36,26 @@ public class BookingService {
      */
     @Transactional
     public Booking createBooking(UUID userId, CreateBookingRequest request) {
-        // Enforce time logic
+        // Enforce time ordering
         if (request.getStartTime().isAfter(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time.");
+        }
+
+        // Reject past bookings
+        LocalDateTime now = LocalDateTime.now();
+        if (request.getStartTime().isBefore(now)) {
+            throw new IllegalArgumentException("Start time cannot be in the past.");
+        }
+
+        // Enforce business hours: start 08:00–16:59, end 08:00–17:00 exactly
+        int startHour = request.getStartTime().getHour();
+        int endHour   = request.getEndTime().getHour();
+        int endMinute = request.getEndTime().getMinute();
+        if (startHour < 8 || startHour >= 17) {
+            throw new IllegalArgumentException("Start time must be between 8:00 AM and 5:00 PM.");
+        }
+        if (endHour < 8 || endHour > 17 || (endHour == 17 && endMinute > 0)) {
+            throw new IllegalArgumentException("End time must be between 8:00 AM and 5:00 PM.");
         }
 
         // Fetch real entities to ensure they are hydrated for notifications
@@ -65,15 +82,19 @@ public class BookingService {
                 .build();
 
         Booking saved = bookingRepository.saveAndFlush(booking);
-        
-        notificationService.sendNotification(
-            user,
-            "Your booking request for " + resource.getName() + " is pending approval.",
-            NotificationType.SYSTEM_ANNOUNCEMENT,
-            "BOOKING",
-            saved.getId()
-        );
-        
+
+        try {
+            notificationService.sendNotification(
+                user,
+                "Your booking request for " + resource.getName() + " is pending approval.",
+                NotificationType.SYSTEM_ANNOUNCEMENT,
+                "BOOKING",
+                saved.getId()
+            );
+        } catch (Exception e) {
+            // Notification failure must not roll back a successful booking
+        }
+
         return saved;
     }
 

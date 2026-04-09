@@ -19,8 +19,8 @@ export const bookingApi = {
     axiosClient.get<ApiResponse<Booking[]>>('/bookings'),
 
   /** Get user's own bookings */
-  getMyBookings: () => 
-    axiosClient.get<ApiResponse<Booking[]>>('/bookings/me'),
+  getMyBookings: () =>
+    axiosClient.get<ApiResponse<Booking[]>>('/bookings/my'),
 
   /** Get single booking details */
   getById: (id: string) => 
