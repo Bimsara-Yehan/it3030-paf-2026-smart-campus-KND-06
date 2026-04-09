@@ -24,7 +24,7 @@ export const ResourceCataloguePage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0c] text-gray-200 p-8 pt-12 relative">
+        <div className="min-h-screen bg-gray-50 text-gray-800 p-8 pt-12 relative">
             
             {/* Modal Injection */}
             <CreateResourceModal 
@@ -38,17 +38,17 @@ export const ResourceCataloguePage: React.FC = () => {
                 {/* Header Section */}
                 <div className="flex justify-between items-end mb-10">
                     <div>
-                        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-2">
+                        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-2">
                             Facilities & Assets
                         </h1>
-                        <p className="text-gray-500 max-w-xl">
+                        <p className="text-gray-600 max-w-xl">
                             Browse and retrieve detailed metadata on lecture halls, laboratories, meeting rooms, and shared equipment available across the campus grid.
                         </p>
                     </div>
                     {/* Trigger button for Admin Form */}
                     <button 
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold shadow-[0_0_20px_rgba(79,70,229,0.2)] transition-all"
                     >
                         + New Resource
                     </button>
@@ -59,12 +59,12 @@ export const ResourceCataloguePage: React.FC = () => {
                 {/* State Handling */}
                 {loading && (
                     <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
                     </div>
                 )}
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-4 rounded-xl">
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-xl">
                         Error fetching catalogue: {error}
                     </div>
                 )}
@@ -79,7 +79,7 @@ export const ResourceCataloguePage: React.FC = () => {
                 )}
 
                 {!loading && !error && resources.length === 0 && (
-                    <div className="text-center py-20 text-gray-600 border border-dashed border-gray-800 rounded-2xl">
+                    <div className="text-center py-20 text-gray-500 bg-white border border-dashed border-gray-300 rounded-2xl">
                         No resources match your precise grid filters.
                     </div>
                 )}
