@@ -9,6 +9,7 @@ import com.smartcampus.entity.User;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.AuthResponse;
 import com.smartcampus.dto.response.LoginHistoryResponse;
+import com.smartcampus.dto.response.SessionResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -314,5 +315,30 @@ public class AuthController {
         log.debug("GET /auth/login-history");
         List<LoginHistoryResponse> history = authService.getLoginHistory();
         return ResponseEntity.ok(ApiResponse.success("Login history retrieved.", history));
+    }
+
+    // =========================================================================
+    // GET /auth/sessions
+    // =========================================================================
+
+    @GetMapping("/sessions")
+    public ResponseEntity<ApiResponse<List<SessionResponse>>> getSessions(
+            @AuthenticationPrincipal User currentUser) {
+        log.debug("GET /auth/sessions — user: {}", currentUser.getId());
+        List<SessionResponse> sessions = authService.getActiveSessions(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Active sessions retrieved.", sessions));
+    }
+
+    // =========================================================================
+    // DELETE /auth/sessions/{id}
+    // =========================================================================
+
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<ApiResponse<Void>> revokeSession(
+            @PathVariable java.util.UUID id,
+            @AuthenticationPrincipal User currentUser) {
+        log.debug("DELETE /auth/sessions/{} — user: {}", id, currentUser.getId());
+        authService.revokeSession(id, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Session revoked."));
     }
 }

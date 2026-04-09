@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,6 +47,22 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
      *         the token does not exist in the database (never issued or already deleted)
      */
     Optional<RefreshToken> findByToken(String token);
+
+    // =========================================================================
+    // Active session queries
+    // =========================================================================
+
+    /**
+     * Returns all non-revoked, non-expired refresh tokens for the given user.
+     * Used to populate the active-sessions management page.
+     */
+    List<RefreshToken> findByUser_IdAndRevokedFalseAndExpiresAtAfter(UUID userId, LocalDateTime now);
+
+    /**
+     * Finds a specific token by its ID and owner — used for per-session revocation
+     * so that a user can only revoke their own sessions.
+     */
+    Optional<RefreshToken> findByIdAndUser_Id(UUID id, UUID userId);
 
     // =========================================================================
     // Bulk revocation

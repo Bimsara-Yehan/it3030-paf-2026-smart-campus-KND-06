@@ -81,13 +81,23 @@ public class BookingService {
         String adminMessage = user.getName() + " requested " + resource.getName()
                 + " from " + fmt(saved.getStartTime()) + " to " + fmt(saved.getEndTime()) + ".";
         userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
-                .forEach(admin -> notificationService.sendNotification(
-                        admin,
-                        adminMessage,
-                        NotificationType.SYSTEM_ANNOUNCEMENT,
-                        "BOOKING",
-                        saved.getId()
-                ));
+                .forEach(admin -> {
+                    notificationService.sendNotification(
+                            admin,
+                            adminMessage,
+                            NotificationType.SYSTEM_ANNOUNCEMENT,
+                            "BOOKING",
+                            saved.getId()
+                    );
+                    emailService.sendNewBookingRequestEmail(
+                            admin.getEmail(),
+                            admin.getName(),
+                            user.getName(),
+                            resource.getName(),
+                            fmt(saved.getStartTime()),
+                            fmt(saved.getEndTime())
+                    );
+                });
 
         emailService.sendBookingConfirmationEmail(
             user.getEmail(),
@@ -213,6 +223,15 @@ public class BookingService {
                 "Your booking has been cancelled.",
                 NotificationType.BOOKING_CANCELLED
         );
+
+        emailService.sendBookingCancelledEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                fmt(booking.getStartTime()),
+                fmt(booking.getEndTime())
+        );
+
         return saved;
     }
 

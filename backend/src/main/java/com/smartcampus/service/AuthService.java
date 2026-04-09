@@ -8,6 +8,7 @@ import com.smartcampus.entity.PasswordResetToken;
 import com.smartcampus.repository.PasswordResetTokenRepository;
 import com.smartcampus.dto.response.AuthResponse;
 import com.smartcampus.dto.response.LoginHistoryResponse;
+import com.smartcampus.dto.response.SessionResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.entity.RefreshToken;
 import com.smartcampus.entity.User;
@@ -130,7 +131,7 @@ public class AuthService {
         log.debug("User saved with id: {}", user.getId());
 
         // Steps 4–6: generate tokens and build the response
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, null, null);
     }
 
     // =========================================================================
@@ -187,7 +188,7 @@ public class AuthService {
         loginHistoryService.record(user, request.getEmail(), ipAddress, userAgent, LoginStatus.SUCCESS);
 
         log.debug("Login successful for user id: {}", user.getId());
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, userAgent, ipAddress);
     }
 
     // =========================================================================
@@ -227,9 +228,9 @@ public class AuthService {
         storedToken.setRevoked(true);
         refreshTokenRepository.save(storedToken);
 
-        // Issue a completely new token pair
+        // Issue a completely new token pair, carrying device info forward from the old token
         log.debug("Rotating refresh token for user id: {}", user.getId());
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, storedToken.getUserAgent(), storedToken.getIpAddress());
     }
 
     // =========================================================================
@@ -472,6 +473,35 @@ public class AuthService {
         return (remoteAddr != null && !remoteAddr.isBlank()) ? remoteAddr : "unknown";
     }
 
+    // =========================================================================
+    // Active session management
+    // =========================================================================
+
+    /**
+     * Returns all active (non-revoked, non-expired) sessions for the given user.
+     */
+    @Transactional(readOnly = true)
+    public List<SessionResponse> getActiveSessions(UUID userId) {
+        return refreshTokenRepository
+                .findByUser_IdAndRevokedFalseAndExpiresAtAfter(userId, LocalDateTime.now())
+                .stream()
+                .map(SessionResponse::from)
+                .toList();
+    }
+
+    /**
+     * Revokes a single session by its token ID.
+     * Only the owning user can revoke their own sessions.
+     */
+    @Transactional
+    public void revokeSession(UUID tokenId, UUID userId) {
+        RefreshToken token = refreshTokenRepository.findByIdAndUser_Id(tokenId, userId)
+                .orElseThrow(() -> new UnauthorizedException("Session not found."));
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+        log.debug("Session {} revoked by user {}", tokenId, userId);
+    }
+
     /**
      * Generates a JWT access token and a JWT refresh token for the given user,
      * persists the refresh token in the database, and assembles the full
@@ -483,7 +513,7 @@ public class AuthService {
      * @param user the authenticated user for whom tokens are being issued
      * @return a complete {@link AuthResponse} ready to be returned to the client
      */
-    private AuthResponse buildAuthResponse(User user) {
+    private AuthResponse buildAuthResponse(User user, String userAgent, String ipAddress) {
         // Generate both tokens via JwtService
         String accessToken  = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -498,6 +528,8 @@ public class AuthService {
                 .user(user)
                 .expiresAt(expiresAt)
                 .revoked(false)
+                .userAgent(userAgent)
+                .ipAddress(ipAddress)
                 .build();
         refreshTokenRepository.save(tokenEntity);
 
