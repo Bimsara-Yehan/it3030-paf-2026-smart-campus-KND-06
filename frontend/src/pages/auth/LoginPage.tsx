@@ -47,15 +47,48 @@ export default function LoginPage() {
 
   /** Redirect to Spring Security's OAuth2 authorisation endpoint for Google. */
   const handleGoogleLogin = () => {
-    window.location.href = '/api/v1/auth/oauth2/google';
+    window.location.href = 'http://localhost:8081/api/v1/auth/oauth2/google';
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4 overflow-hidden">
+      
+      {/* ── Motion Overlay: Falling Leaves / Particles ── */}
+      <style>{`
+        @keyframes float {
+          0%   { transform: translateY(-5vh) translateX(0px) rotate(0deg); opacity: 0; }
+          10%  { opacity: 0.8; }
+          90%  { opacity: 0.8; }
+          100% { transform: translateY(105vh) translateX(20px) rotate(360deg); opacity: 0; }
+        }
+        .leaf {
+          position: absolute;
+          top: -10%;
+          background: rgba(120, 80, 40, 0.15); /* Subtle oak brown shadow */
+          border-radius: 50% 0 50% 0; /* Leaf shape */
+          pointer-events: none;
+          animation: float linear infinite;
+        }
+        .leaf:nth-child(1) { left: 10%; width: 20px; height: 20px; animation-duration: 12s; animation-delay: 0s; }
+        .leaf:nth-child(2) { left: 30%; width: 30px; height: 30px; animation-duration: 15s; animation-delay: 3s; }
+        .leaf:nth-child(3) { left: 50%; width: 15px; height: 15px; animation-duration: 10s; animation-delay: 1s; }
+        .leaf:nth-child(4) { left: 70%; width: 25px; height: 25px; animation-duration: 14s; animation-delay: 5s; }
+        .leaf:nth-child(5) { left: 85%; width: 35px; height: 35px; animation-duration: 18s; animation-delay: 2s; }
+      `}</style>
+      
+      <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+      </div>
+
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl relative z-10 border border-gray-100">
         {/* ── Header ── */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Smart Campus Hub</h1>
+        <div className="mb-8 text-center relative z-10">
+          <img src="/logo.png" alt="Oakridge Logo" className="h-32 mx-auto mb-4 object-contain" />
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Oakridge Operations</h1>
           <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
 
@@ -81,7 +114,7 @@ export default function LoginPage() {
                 required: 'Email is required',
                 pattern: { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
             />
             {errors.email && (
               <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -90,9 +123,14 @@ export default function LoginPage() {
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Link to="/forgot-password" className="text-xs text-amber-700 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
@@ -101,7 +139,7 @@ export default function LoginPage() {
                 required: 'Password is required',
                 minLength: { value: 6, message: 'Password must be at least 6 characters' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
             />
             {errors.password && (
               <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
@@ -111,7 +149,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="w-full rounded-full bg-amber-700 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
           >
             {isSubmitting ? 'Signing in…' : 'Sign In'}
           </button>
@@ -158,7 +196,7 @@ export default function LoginPage() {
         {/* ── Register link ── */}
         <p className="mt-6 text-center text-sm text-gray-500">
           Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-blue-600 hover:underline">
+          <Link to="/register" className="font-medium text-amber-700 hover:underline">
             Create one
           </Link>
         </p>

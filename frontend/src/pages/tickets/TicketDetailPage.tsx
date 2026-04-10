@@ -96,7 +96,7 @@ export default function TicketDetailPage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-700"></div>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function TicketDetailPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Ticket Not Found</h3>
         <p className="text-gray-500 mb-6">The ticket you are looking for does not exist or you don't have permission to view it.</p>
-        <Link to="/tickets" className="text-blue-600 hover:underline">← Back to Tickets</Link>
+        <Link to="/tickets" className="text-amber-700 hover:underline">← Back to Tickets</Link>
       </div>
     );
   }
@@ -163,7 +163,7 @@ export default function TicketDetailPage() {
             {isTechOrAdmin && ticket.status === 'OPEN' && (
               <button 
                 onClick={() => handleUpdateStatus('IN_PROGRESS')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-amber-700 text-white rounded-lg shadow-sm hover:bg-amber-800 text-sm font-medium transition-colors"
                 disabled={statusMutation.isPending}
               >
                 Accept Ticket
@@ -274,7 +274,7 @@ export default function TicketDetailPage() {
                        <select 
                          value={selectedTech}
                          onChange={(e) => setSelectedTech(e.target.value)}
-                         className="flex-1 text-sm border border-gray-300 rounded-lg bg-gray-50 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                         className="flex-1 text-sm border border-gray-300 rounded-lg bg-gray-50 p-2 focus:ring-2 focus:ring-amber-500 outline-none"
                        >
                          <option value="">Select...</option>
                          {technicians?.map(tech => (
@@ -284,7 +284,7 @@ export default function TicketDetailPage() {
                        <button 
                          onClick={() => selectedTech && assignMutation.mutate(selectedTech)}
                          disabled={!selectedTech || assignMutation.isPending}
-                         className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                         className="px-3 py-1.5 bg-amber-700 text-white rounded-lg text-xs font-semibold hover:bg-amber-800 disabled:opacity-50 transition-colors"
                        >
                          {assignMutation.isPending ? '...' : 'Assign'}
                        </button>
@@ -339,7 +339,7 @@ export default function TicketDetailPage() {
                         </svg>
                         <span className="text-sm font-medium text-gray-700 truncate">{file.fileName || 'Image Attachment'}</span>
                       </div>
-                      <a href={file.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 text-xs font-semibold">View</a>
+                      <a href={file.fileUrl} target="_blank" rel="noreferrer" className="text-amber-700 hover:text-amber-900 text-xs font-semibold">View</a>
                     </li>
                   ))}
                 </ul>
@@ -360,7 +360,7 @@ function TimelineItem({ title, date, description, completed, color = 'blue' }: {
   color?: 'blue' | 'green' | 'gray';
 }) {
   const colorMap = {
-    blue: 'bg-blue-600',
+    blue: 'bg-amber-700',
     green: 'bg-emerald-500',
     gray: 'bg-gray-400'
   };

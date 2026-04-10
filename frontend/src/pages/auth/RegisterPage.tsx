@@ -148,14 +148,14 @@ export default function RegisterPage() {
 
   /** Kick off the Spring Security Google OAuth2 flow — same path as LoginPage. */
   const handleGoogleLogin = () => {
-    window.location.href = '/api/v1/auth/oauth2/google';
+    window.location.href = 'http://localhost:8081/api/v1/auth/oauth2/google';
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-lg border border-gray-100">
 
         {/* ── Header ── */}
         <div className="mb-8 text-center">
@@ -187,7 +187,7 @@ export default function RegisterPage() {
                 minLength: { value: 2,   message: 'Name must be at least 2 characters' },
                 maxLength: { value: 100, message: 'Name must be at most 100 characters' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
             />
             {errors.fullName && (
               <p className="mt-1 text-xs text-red-600">{errors.fullName.message}</p>
@@ -207,7 +207,7 @@ export default function RegisterPage() {
                 required: 'Email is required',
                 pattern:  { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
             />
             {errors.email && (
               <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -230,7 +230,7 @@ export default function RegisterPage() {
                   required:  'Password is required',
                   minLength: { value: 8, message: 'Password must be at least 8 characters' },
                 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
               />
               <button
                 type="button"
@@ -312,7 +312,7 @@ export default function RegisterPage() {
                   validate:  (value) =>
                     value === passwordValue || 'Passwords do not match',
                 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
               />
               <button
                 type="button"
@@ -334,7 +334,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="w-full rounded-full bg-amber-700 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
@@ -376,7 +376,7 @@ export default function RegisterPage() {
         {/* ── Login link ── */}
         <p className="mt-6 text-center text-sm text-gray-500">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:underline">
+          <Link to="/login" className="font-medium text-amber-700 hover:underline">
             Sign in
           </Link>
         </p>

@@ -1,10 +1,15 @@
 package com.smartcampus.controller;
 
+import com.smartcampus.dto.request.ChangePasswordRequest;
+import com.smartcampus.dto.request.ForgotPasswordRequest;
 import com.smartcampus.dto.request.LoginRequest;
 import com.smartcampus.dto.request.RegisterRequest;
+import com.smartcampus.dto.request.ResetPasswordRequest;
+import com.smartcampus.entity.User;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.AuthResponse;
 import com.smartcampus.dto.response.LoginHistoryResponse;
+import com.smartcampus.dto.response.SessionResponse;
 import com.smartcampus.dto.response.UserResponse;
 import com.smartcampus.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -147,11 +153,21 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request) {
 
         log.debug("POST /auth/logout");
         String refreshToken = body.get("refreshToken");
         authService.logout(refreshToken);
+
+        // Invalidate the HTTP session so stale OAuth2AuthenticationTokens cannot
+        // contaminate the SecurityContext for the next user who logs in on the
+        // same browser (especially during user→admin account switching).
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully."));
     }
 
@@ -212,6 +228,76 @@ public class AuthController {
     }
 
     // =========================================================================
+    // POST /auth/forgot-password
+    // =========================================================================
+
+    /**
+     * Initiates the password-reset flow.
+     *
+     * <p>Always returns {@code 200 OK} regardless of whether the email is registered
+     * to prevent user enumeration. The reset email is sent asynchronously.
+     *
+     * @param request JSON body with {@code email}
+     * @return {@code 200 OK} with a generic success message
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        log.info("POST /auth/forgot-password — email: {}", request.getEmail());
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "If that email is registered you will receive a reset link shortly."));
+    }
+
+    // =========================================================================
+    // POST /auth/reset-password
+    // =========================================================================
+
+    /**
+     * Completes the password-reset flow by verifying the token and setting a new password.
+     *
+     * @param request JSON body with {@code token} and {@code newPassword}
+     * @return {@code 200 OK} on success; {@code 401} if the token is invalid/expired/used
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        log.info("POST /auth/reset-password");
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully. Please log in."));
+    }
+
+    // =========================================================================
+    // POST /auth/change-password
+    // =========================================================================
+
+    /**
+     * Changes the password of the currently authenticated user.
+     *
+     * <p>Requires a valid Bearer token. The current password must be provided to
+     * confirm intent — OAuth-only accounts (no local password) are rejected.
+     *
+     * @param currentUser the authenticated user injected by Spring Security
+     * @param request     JSON body with {@code currentPassword} and {@code newPassword}
+     * @return {@code 200 OK} with a success message and no data payload
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        log.info("POST /auth/change-password — user: {}", currentUser.getId());
+        authService.changePassword(
+                currentUser.getId(),
+                request.getCurrentPassword(),
+                request.getNewPassword()
+        );
+        return ResponseEntity.ok(ApiResponse.success("Password changed successfully."));
+    }
+
+    // =========================================================================
     // GET /auth/login-history
     // =========================================================================
 
@@ -229,5 +315,30 @@ public class AuthController {
         log.debug("GET /auth/login-history");
         List<LoginHistoryResponse> history = authService.getLoginHistory();
         return ResponseEntity.ok(ApiResponse.success("Login history retrieved.", history));
+    }
+
+    // =========================================================================
+    // GET /auth/sessions
+    // =========================================================================
+
+    @GetMapping("/sessions")
+    public ResponseEntity<ApiResponse<List<SessionResponse>>> getSessions(
+            @AuthenticationPrincipal User currentUser) {
+        log.debug("GET /auth/sessions — user: {}", currentUser.getId());
+        List<SessionResponse> sessions = authService.getActiveSessions(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Active sessions retrieved.", sessions));
+    }
+
+    // =========================================================================
+    // DELETE /auth/sessions/{id}
+    // =========================================================================
+
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<ApiResponse<Void>> revokeSession(
+            @PathVariable java.util.UUID id,
+            @AuthenticationPrincipal User currentUser) {
+        log.debug("DELETE /auth/sessions/{} — user: {}", id, currentUser.getId());
+        authService.revokeSession(id, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Session revoked."));
     }
 }

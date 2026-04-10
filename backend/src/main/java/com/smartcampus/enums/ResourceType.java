@@ -1,8 +1,13 @@
 package com.smartcampus.enums;
 
 public enum ResourceType {
-    LECTURE_HALL,
+    ROOM,
     LAB,
-    MEETING_ROOM,
-    EQUIPMENT
+    EQUIPMENT,
+    VEHICLE,
+    SPORTS_FACILITY,
+    OTHER,
+    // Support legacy Cloud DB records inserted by other team members
+    LECTURE_HALL,
+    MEETING_ROOM
 }

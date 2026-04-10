@@ -6,11 +6,14 @@ import com.smartcampus.dto.response.NotificationResponse;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.NotificationType;
 import com.smartcampus.service.NotificationService;
+import com.smartcampus.service.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,7 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final SseEmitterService sseEmitterService;
 
     // =========================================================================
     // GET /notifications
@@ -69,6 +73,31 @@ public class NotificationController {
         List<NotificationResponse> notifications =
                 notificationService.getNotificationsForUser(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Notifications retrieved.", notifications));
+    }
+
+    // =========================================================================
+    // GET /notifications/stream  (SSE)
+    // =========================================================================
+
+    /**
+     * Opens a persistent Server-Sent Events stream for the current user.
+     *
+     * <p>The browser connects once and receives real-time {@code notification}
+     * events whenever a new notification is created for this user. Replaces the
+     * 30-second polling approach in the frontend notification bell.
+     *
+     * <p>Authentication: JWT is accepted via {@code ?token=} query param because
+     * the browser {@code EventSource} API cannot set custom request headers.
+     * {@link com.smartcampus.security.JwtFilter} handles both the header and
+     * query-param paths transparently.
+     *
+     * @param currentUser the authenticated user injected by Spring Security
+     * @return a configured {@link SseEmitter} held open until the client disconnects
+     */
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamNotifications(@AuthenticationPrincipal User currentUser) {
+        log.debug("SSE /notifications/stream opened — user: {}", currentUser.getId());
+        return sseEmitterService.createEmitter(currentUser.getId());
     }
 
     // =========================================================================

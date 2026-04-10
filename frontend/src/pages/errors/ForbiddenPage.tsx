@@ -11,7 +11,7 @@ export default function ForbiddenPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
       <div className="text-center">
-        <p className="text-9xl font-extrabold text-blue-600">403</p>
+        <p className="text-9xl font-extrabold text-amber-700">403</p>
 
         <h1 className="mt-4 text-3xl font-bold text-gray-900">Access Denied</h1>
 
@@ -23,7 +23,7 @@ export default function ForbiddenPage() {
 
         <button
           onClick={() => navigate(-1)}
-          className="mt-8 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+          className="mt-8 rounded-full bg-amber-700 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
         >
           Go Back
         </button>

@@ -49,6 +49,7 @@ public class NotificationService {
 
     private final NotificationRepository           notificationRepository;
     private final NotificationPreferenceRepository preferenceRepository;
+    private final SseEmitterService                sseEmitterService;
 
     // =========================================================================
     // Public API for other modules — sendNotification
@@ -104,8 +105,15 @@ public class NotificationService {
                 .relatedEntityId(relatedEntityId)
                 .build();
 
-        notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
         log.debug("Notification [{}] created for user {}", type, user.getId());
+
+        // Push in real-time to the user's active SSE stream (no-op if not connected)
+        try {
+            sseEmitterService.sendToUser(user.getId(), NotificationResponse.from(saved));
+        } catch (Exception e) {
+            log.debug("SSE push skipped for user {}: {}", user.getId(), e.getMessage());
+        }
     }
 
     // =========================================================================

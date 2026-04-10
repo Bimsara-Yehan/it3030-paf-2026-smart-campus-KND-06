@@ -57,12 +57,20 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final String AUTH_HEADER = "Authorization";
 
     /**
-     * Path prefix for public authentication endpoints.
-     * Requests to these paths bypass JWT validation entirely.
-     * Note: the context-path /api/v1 is NOT included here because
+     * Public auth paths that never carry a JWT and should bypass this filter.
+     * Note: paths are relative to the context-path (/api/v1) because
      * {@link OncePerRequestFilter#shouldNotFilter} receives the raw servlet path.
+     *
+     * /auth/me and /auth/login-history are intentionally excluded — they are
+     * protected endpoints that require a valid JWT even though they start with /auth/.
      */
-    private static final String AUTH_PATH_PREFIX = "/auth/";
+    private static final java.util.List<String> PUBLIC_AUTH_PATHS = java.util.List.of(
+            "/auth/login",
+            "/auth/register",
+            "/auth/refresh",
+            "/auth/logout",
+            "/auth/oauth2"
+    );
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -74,9 +82,10 @@ public class JwtFilter extends OncePerRequestFilter {
     /**
      * Determines whether this filter should be skipped for the given request.
      *
-     * <p>Requests to {@code /auth/**} are public endpoints (login, register,
-     * OAuth callback, token refresh). Running the JWT filter on these paths would
-     * reject unauthenticated users before they can even obtain a token.
+     * <p>Only truly public auth endpoints (login, register, refresh, logout,
+     * OAuth2 initiation) bypass JWT validation. Protected endpoints such as
+     * {@code /auth/me} and {@code /auth/login-history} still require JWT
+     * processing even though they start with {@code /auth/}.
      *
      * @param request the incoming HTTP request
      * @return {@code true} if the filter should be skipped; {@code false} to apply it
@@ -85,8 +94,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        // Skip JWT validation for all public authentication paths
-        boolean skip = path.contains(AUTH_PATH_PREFIX);
+        boolean skip = PUBLIC_AUTH_PATHS.stream().anyMatch(path::startsWith);
         if (skip) {
             log.trace("JWT filter skipped for public path: {}", path);
         }
@@ -121,19 +129,23 @@ public class JwtFilter extends OncePerRequestFilter {
         // ── Step 1: Read the Authorization header ──────────────────────────────
         final String authHeader = request.getHeader(AUTH_HEADER);
 
-        // ── Step 2: Validate the header format ────────────────────────────────
-        // If the header is missing or does not start with "Bearer ", there is no
-        // JWT to process. Pass the request through — Spring Security will enforce
-        // authentication on protected endpoints after the filter chain completes.
-        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
-            log.trace("No Bearer token found in request to: {}", request.getServletPath());
-            filterChain.doFilter(request, response);
-            return;
+        // ── Step 2 & 3: Extract the raw JWT string ─────────────────────────────
+        // Primary path:  Authorization: Bearer <token>  (all normal API calls).
+        // Fallback path: ?token= query param — required for SSE EventSource because
+        //                the browser EventSource API cannot set custom request headers.
+        final String jwt;
+        if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+            jwt = authHeader.substring(BEARER_PREFIX.length());
+        } else {
+            String tokenParam = request.getParameter("token");
+            if (tokenParam != null && !tokenParam.isEmpty()) {
+                jwt = tokenParam;
+            } else {
+                log.trace("No Bearer token found in request to: {}", request.getServletPath());
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
-
-        // ── Step 3: Extract the raw JWT string ────────────────────────────────
-        // Strip the "Bearer " prefix (7 characters) to get the token itself.
-        final String jwt = authHeader.substring(BEARER_PREFIX.length());
 
         try {
             // ── Step 4: Extract the user email from the token ─────────────────

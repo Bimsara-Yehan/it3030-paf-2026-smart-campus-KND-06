@@ -55,7 +55,7 @@ const CreateBookingPage: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-blue-600">Preparing booking form...</div>;
+  if (loading) return <div className="p-8 text-center text-amber-700">Preparing booking form...</div>;
 
   return (
     <div className="p-4 sm:p-8 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -76,7 +76,7 @@ const CreateBookingPage: React.FC = () => {
               required
               value={formData.resourceId}
               onChange={(e) => setFormData({ ...formData, resourceId: e.target.value })}
-              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium appearance-none text-gray-900"
+              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all font-medium appearance-none text-gray-900"
             >
               <option value="">Choose a resource...</option>
               {resources.map((r) => (
@@ -95,7 +95,7 @@ const CreateBookingPage: React.FC = () => {
                 required
                 value={formData.startTime}
                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-gray-900"
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all font-medium text-gray-900"
               />
             </div>
             <div className="space-y-2">
@@ -105,7 +105,7 @@ const CreateBookingPage: React.FC = () => {
                 required
                 value={formData.endTime}
                 onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-gray-900"
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all font-medium text-gray-900"
               />
             </div>
           </div>
@@ -118,7 +118,7 @@ const CreateBookingPage: React.FC = () => {
               required
               value={formData.attendees}
               onChange={(e) => setFormData({ ...formData, attendees: parseInt(e.target.value) || 1 })}
-              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-gray-900"
+              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all font-medium text-gray-900"
             />
           </div>
 
@@ -129,7 +129,7 @@ const CreateBookingPage: React.FC = () => {
               placeholder="Tell us why you need this resource..."
               value={formData.purpose}
               onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium resize-none text-gray-900"
+              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all font-medium resize-none text-gray-900"
             />
           </div>
 
@@ -144,7 +144,7 @@ const CreateBookingPage: React.FC = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-2 py-4 px-8 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 active:scale-95"
+              className="flex-2 py-4 px-8 bg-amber-700 text-white font-bold rounded-2xl shadow-lg shadow-amber-200 hover:bg-amber-800 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 active:scale-95"
             >
               {submitting ? 'Submitting...' : 'Submit Request'}
             </button>

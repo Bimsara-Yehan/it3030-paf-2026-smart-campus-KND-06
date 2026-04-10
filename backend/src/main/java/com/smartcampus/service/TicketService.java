@@ -10,6 +10,7 @@ import com.smartcampus.entity.Ticket;
 import com.smartcampus.entity.TicketAttachment;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.TicketStatus;
+import com.smartcampus.enums.UserRole;
 import com.smartcampus.exception.BadRequestException;
 import com.smartcampus.exception.ForbiddenException;
 import com.smartcampus.exception.ResourceNotFoundException;
@@ -80,9 +81,27 @@ public class TicketService {
 
         Ticket savedTicket = ticketRepository.save(ticket);
         log.info("Ticket created: {} by user {}", savedTicket.getId(), currentUser.getEmail());
-        
-        notificationService.sendNotification(currentUser, "Your ticket has been created successfully.", NotificationType.TICKET_ASSIGNED);
-        
+
+        try {
+            notificationService.sendNotification(currentUser, "Your ticket has been submitted successfully.", NotificationType.TICKET_STATUS_CHANGED);
+        } catch (Exception e) {
+            log.warn("Failed to send ticket confirmation notification to user {}", currentUser.getEmail());
+        }
+
+        try {
+            String adminMessage = currentUser.getName() + " submitted a new ticket: \"" + savedTicket.getTitle() + "\" [" + savedTicket.getCategory() + "]";
+            userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
+                    .forEach(admin -> notificationService.sendNotification(
+                            admin,
+                            adminMessage,
+                            NotificationType.TICKET_STATUS_CHANGED,
+                            "TICKET",
+                            savedTicket.getId()
+                    ));
+        } catch (Exception e) {
+            log.warn("Failed to send new ticket notification to admins for ticket {}", savedTicket.getId());
+        }
+
         return TicketResponse.from(savedTicket);
     }
 

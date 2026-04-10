@@ -17,7 +17,7 @@ const MyBookingsPage: React.FC = () => {
     <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-700 to-amber-900">
             My Resource Requests
           </h1>
           <p className="text-gray-500 mt-1">Track and manage your upcoming campus resource bookings.</p>
@@ -25,7 +25,7 @@ const MyBookingsPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/bookings/new')}
-          className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+          className="px-6 py-2.5 bg-amber-700 text-white rounded-xl font-semibold shadow-lg shadow-amber-200 hover:bg-amber-800 transition-all active:scale-95 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -49,8 +49,8 @@ const MyBookingsPage: React.FC = () => {
         </div>
       ) : bookings.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center p-16 bg-white/40 backdrop-blur-xl border border-white/40 rounded-3xl min-h-[400px]">
-          <div className="w-24 h-24 mb-6 rounded-full bg-blue-50 flex items-center justify-center border-4 border-white shadow-inner">
-             <svg className="w-12 h-12 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-24 h-24 mb-6 rounded-full bg-amber-50 flex items-center justify-center border-4 border-white shadow-inner">
+             <svg className="w-12 h-12 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
              </svg>
           </div>
@@ -60,7 +60,7 @@ const MyBookingsPage: React.FC = () => {
           </p>
           <button 
             onClick={() => navigate('/bookings/new')}
-            className="mt-6 text-blue-600 font-semibold hover:underline"
+            className="mt-6 text-amber-700 font-semibold hover:underline"
           >
             Create your first request →
           </button>
@@ -70,10 +70,10 @@ const MyBookingsPage: React.FC = () => {
           {bookings.map((booking) => (
             <div 
               key={booking.id}
-              className="group relative bg-white/50 backdrop-blur-xl border border-white/40 rounded-3xl p-6 shadow-xl shadow-blue-900/5 hover:bg-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+              className="group relative bg-white/50 backdrop-blur-xl border border-white/40 rounded-3xl p-6 shadow-xl shadow-gray-900/5 hover:bg-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               <div className="flex justify-between items-start mb-4">
-                <div className="p-3 rounded-2xl bg-blue-600/10 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                <div className="p-3 rounded-2xl bg-amber-700/10 text-amber-700 group-hover:bg-amber-700 group-hover:text-white transition-colors duration-300">
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
@@ -87,7 +87,7 @@ const MyBookingsPage: React.FC = () => {
                   <a
                     href={`http://localhost:8081/api/bookings/${booking.id}/calendar`}
                     download
-                    className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                    className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 transition-colors"
                     title="Export to Calendar (.ics)"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,7 +120,7 @@ const MyBookingsPage: React.FC = () => {
               )}
 
               <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                 <button className="text-blue-600 text-sm font-bold flex items-center gap-1">
+                 <button className="text-amber-700 text-sm font-bold flex items-center gap-1">
                    Details <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5l7 7-7 7" strokeWidth={2}/></svg>
                  </button>
               </div>

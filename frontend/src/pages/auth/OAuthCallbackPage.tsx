@@ -83,9 +83,9 @@ export default function OAuthCallbackPage() {
 
   // ── Loading UI shown while /auth/me is in flight ───────────────────────────
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50">
       <div className="text-center">
-        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-amber-700 border-t-transparent" />
         <p className="mt-4 text-sm text-gray-500">Completing sign-in…</p>
       </div>
     </div>

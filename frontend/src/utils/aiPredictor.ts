@@ -6,101 +6,89 @@ export interface AIPrediction {
   reason: string;
 }
 
-// Enhanced keyword matching with exact word matching and partial matching
-function matchKeyword(text: string, keyword: string): boolean {
-  // Try exact word boundary match first (for single and multi-word keywords)
-  try {
-    // Escape special regex characters in keyword
-    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
-    return regex.test(text);
-  } catch (e) {
-    // Fallback to includes match if regex fails
-    return text.toLowerCase().includes(keyword.toLowerCase());
-  }
+// Helper function for word boundary matching
+function hasKeyword(text: string, keyword: string): boolean {
+  const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+  return regex.test(text);
 }
 
-// Count all matching keywords for a category
-function countMatches(text: string, keywords: string[]): number {
-  let count = 0;
-  for (const keyword of keywords) {
-    if (matchKeyword(text, keyword)) {
-      count++;
-    }
-  }
-  return count;
+// Helper function to count matching keywords
+function countMatchingKeywords(text: string, keywords: string[]): number {
+  return keywords.filter(keyword => hasKeyword(text, keyword)).length;
 }
-
-// Priority order for tie-breaking (higher number = higher priority)
-const PRIORITY_RANK: Record<TicketPriority, number> = {
-  CRITICAL: 4,
-  HIGH: 3,
-  MEDIUM: 2,
-  LOW: 1,
-};
 
 const KEYWORD_RULES = [
   {
+    // SECURITY: emergencies, threats, safety issues
+    keywords: ['security', 'fire', 'smoke', 'danger', 'weapon', 'theft', 'stolen', 'break in', 'intruder', 'assault', 'attack', 'armed', 'emergency', 'robbery', 'burglary', 'sabotage', 'threat', 'suspicious', 'unauthorized access', 'gas leak', 'explosion'],
     category: 'SECURITY' as TicketCategory,
     priority: 'CRITICAL' as TicketPriority,
-    reason: 'Security issue detected',
-    keywords: ['security']
+    reason: 'High-risk security emergency detected'
   },
   {
-    category: 'IT_SUPPORT' as TicketCategory,
-    priority: 'HIGH' as TicketPriority,
-    reason: 'IT support issue detected',
-    keywords: ['it', 'wifi']
-  },
-  {
+    // MAINTENANCE: infrastructure, facilities, repairs
+    keywords: ['maintenance', 'water leak', 'leaking', 'flooded', 'flood', 'pipe burst', 'pipe broken', 'electrical failure', 'power outage', 'no power', 'broken door', 'shattered glass', 'elevator stuck', 'hvac broken', 'heating failure', 'cooling failure', 'plumbing', 'structural', 'damage', 'cracks', 'roof leak', 'equipment broken', 'ac broken', 'repair needed'],
     category: 'MAINTENANCE' as TicketCategory,
     priority: 'HIGH' as TicketPriority,
-    reason: 'Maintenance issue detected',
-    keywords: ['maintenance']
+    reason: 'Critical facility infrastructure issue detected'
   },
   {
+    // IT_SUPPORT: technology, computers, networks, systems
+    keywords: ['it', 'support', 'technology', 'wifi', 'internet', 'network', 'projector', 'computer', 'laptop', 'printer', 'mouse', 'keyboard', 'monitor', 'software', 'app', 'system', 'database', 'server', 'email', 'login', 'password', 'connection down', 'not working', 'crash', 'error', 'screen', 'display'],
+    category: 'IT_SUPPORT' as TicketCategory,
+    priority: 'HIGH' as TicketPriority,
+    reason: 'Technology system failure detected'
+  },
+  {
+    // CLEANING: sanitation, waste, hygiene
+    keywords: ['cleaning', 'clean', 'dirty', 'filthy', 'spill', 'trash', 'garbage', 'waste', 'mess', 'litter', 'smell', 'odor', 'stain', 'graffiti', 'bathroom', 'restroom', 'toilet', 'dust', 'sanitation', 'hygiene', 'sweeping', 'mopping', 'washing', 'clogged'],
     category: 'CLEANING' as TicketCategory,
     priority: 'MEDIUM' as TicketPriority,
-    reason: 'Cleaning issue detected',
-    keywords: ['cleaning']
+    reason: 'Sanitation or cleaning issue detected'
   },
   {
+    // OTHER: general, miscellaneous
+    keywords: ['other', 'miscellaneous', 'general', 'issue', 'problem', 'concern', 'help', 'assistance'],
     category: 'OTHER' as TicketCategory,
     priority: 'MEDIUM' as TicketPriority,
-    reason: 'General issue',
-    keywords: ['other']
+    reason: 'General or unspecified issue type'
   }
 ];
 
 export function predictTicketDetails(text: string): AIPrediction | null {
-  if (!text || text.trim().length < 5) {
+  if (!text || text.trim().length < 10) {
     return null;
   }
 
-  const normalizedText = text.toLowerCase();
+  const normalizedText = text.toLowerCase().trim();
   let bestMatch: AIPrediction | null = null;
   let bestMatchCount = 0;
-  let bestPriority = 0;
 
-  // Find all matching categories and their scores
+  // Check each rule and find the best match
   for (const rule of KEYWORD_RULES) {
-    const matchCount = countMatches(normalizedText, rule.keywords);
-    const priorityRank = PRIORITY_RANK[rule.priority];
+    const matchCount = countMatchingKeywords(normalizedText, rule.keywords);
 
-    // Update best match if:
-    // 1. More keyword matches found, OR
-    // 2. Same keyword matches but higher priority
-    if (matchCount > 0) {
-      if (matchCount > bestMatchCount || 
-          (matchCount === bestMatchCount && priorityRank > bestPriority)) {
-        bestMatchCount = matchCount;
-        bestPriority = priorityRank;
-        bestMatch = {
-          category: rule.category,
-          priority: rule.priority,
-          reason: rule.reason
-        };
-      }
+    // Only consider if we have at least 1 keyword match
+    if (matchCount > 0 && matchCount > bestMatchCount) {
+      bestMatchCount = matchCount;
+      bestMatch = {
+        category: rule.category,
+        priority: rule.priority,
+        reason: rule.reason
+      };
+    }
+  }
+
+  // Bump priority if urgency signals are present in either field
+  const fullText = `${normalizedTitle} ${normalizedDescription}`;
+  if (bestMatch && hasEscalationSignal(fullText)) {
+    const escalated = bumpPriority(bestMatch.priority!);
+    if (escalated !== bestMatch.priority) {
+      bestMatch = {
+        ...bestMatch,
+        priority: escalated,
+        reason: bestMatch.reason + ' — marked urgent'
+      };
     }
   }
 

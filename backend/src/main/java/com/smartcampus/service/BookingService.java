@@ -1,11 +1,13 @@
 package com.smartcampus.service;
 
 import com.smartcampus.dto.request.CreateBookingRequest;
+import java.time.format.DateTimeFormatter;
 import com.smartcampus.entity.Booking;
 import com.smartcampus.entity.Resource;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.BookingStatus;
 import com.smartcampus.enums.NotificationType;
+import com.smartcampus.enums.UserRole;
 import com.smartcampus.repository.BookingRepository;
 import com.smartcampus.repository.ResourceRepository;
 import com.smartcampus.repository.UserRepository;
@@ -28,6 +30,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
 
@@ -36,9 +39,26 @@ public class BookingService {
      */
     @Transactional
     public Booking createBooking(UUID userId, CreateBookingRequest request) {
-        // Enforce time logic
+        // Enforce time ordering
         if (request.getStartTime().isAfter(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time.");
+        }
+
+        // Reject past bookings
+        LocalDateTime now = LocalDateTime.now();
+        if (request.getStartTime().isBefore(now)) {
+            throw new IllegalArgumentException("Start time cannot be in the past.");
+        }
+
+        // Enforce business hours: start 08:00–16:59, end 08:00–17:00 exactly
+        int startHour = request.getStartTime().getHour();
+        int endHour   = request.getEndTime().getHour();
+        int endMinute = request.getEndTime().getMinute();
+        if (startHour < 8 || startHour >= 17) {
+            throw new IllegalArgumentException("Start time must be between 8:00 AM and 5:00 PM.");
+        }
+        if (endHour < 8 || endHour > 17 || (endHour == 17 && endMinute > 0)) {
+            throw new IllegalArgumentException("End time must be between 8:00 AM and 5:00 PM.");
         }
 
         // Fetch real entities to ensure they are hydrated for notifications
@@ -65,15 +85,57 @@ public class BookingService {
                 .build();
 
         Booking saved = bookingRepository.saveAndFlush(booking);
-        
-        notificationService.sendNotification(
-            user,
-            "Your booking request for " + resource.getName() + " is pending approval.",
-            NotificationType.SYSTEM_ANNOUNCEMENT,
-            "BOOKING",
-            saved.getId()
-        );
-        
+
+        try {
+            notificationService.sendNotification(
+                user,
+                "Your booking request for " + resource.getName() + " is pending approval.",
+                NotificationType.SYSTEM_ANNOUNCEMENT,
+                "BOOKING",
+                saved.getId()
+            );
+        } catch (Exception e) {
+            // Notification failure must not roll back a successful booking
+        }
+
+        // Notify all admins so they know a new booking needs review
+        try {
+            String adminMessage = user.getName() + " requested " + resource.getName()
+                    + " from " + fmt(saved.getStartTime()) + " to " + fmt(saved.getEndTime()) + ".";
+            userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
+                    .forEach(admin -> {
+                        notificationService.sendNotification(
+                                admin,
+                                adminMessage,
+                                NotificationType.SYSTEM_ANNOUNCEMENT,
+                                "BOOKING",
+                                saved.getId()
+                        );
+                        emailService.sendNewBookingRequestEmail(
+                                admin.getEmail(),
+                                admin.getName(),
+                                user.getName(),
+                                resource.getName(),
+                                fmt(saved.getStartTime()),
+                                fmt(saved.getEndTime())
+                        );
+                    });
+        } catch (Exception e) {
+            // Admin notification/email failure must not roll back a successful booking
+        }
+
+        try {
+            emailService.sendBookingConfirmationEmail(
+                user.getEmail(),
+                user.getName(),
+                resource.getName(),
+                fmt(saved.getStartTime()),
+                fmt(saved.getEndTime())
+            );
+        } catch (Exception e) {
+            // Confirmation email failure must not roll back a successful booking
+        }
+
         return saved;
     }
 
@@ -120,8 +182,14 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.APPROVED);
         
+        Booking saved;
         try {
-            Booking saved = bookingRepository.save(booking);
+            saved = bookingRepository.save(booking);
+        } catch (OptimisticLockException e) {
+            throw new IllegalStateException("Booking was modified by another user.");
+        }
+
+        try {
             notificationService.sendNotification(
                 booking.getUser(),
                 "Your booking request for " + booking.getResource().getName() + " has been approved!",
@@ -129,10 +197,19 @@ public class BookingService {
                 "BOOKING",
                 booking.getId()
             );
-            return saved;
-        } catch (OptimisticLockException e) {
-            throw new IllegalStateException("Booking was modified by another user.");
-        }
+        } catch (Exception e) { /* notification failure must not fail the approval */ }
+
+        try {
+            emailService.sendBookingApprovedEmail(
+                booking.getUser().getEmail(),
+                booking.getUser().getName(),
+                booking.getResource().getName(),
+                fmt(booking.getStartTime()),
+                fmt(booking.getEndTime())
+            );
+        } catch (Exception e) { /* email failure must not fail the approval */ }
+
+        return saved;
     }
 
     /**
@@ -146,11 +223,24 @@ public class BookingService {
         booking.setRejectionReason(reason);
         
         Booking saved = bookingRepository.save(booking);
-        notificationService.sendNotification(
-                booking.getUser(),
-                "Your booking has been rejected.",
-                NotificationType.BOOKING_REJECTED
-        );
+
+        try {
+            notificationService.sendNotification(
+                    booking.getUser(),
+                    "Your booking has been rejected.",
+                    NotificationType.BOOKING_REJECTED
+            );
+        } catch (Exception e) { /* notification failure must not fail the rejection */ }
+
+        try {
+            emailService.sendBookingRejectedEmail(
+                    booking.getUser().getEmail(),
+                    booking.getUser().getName(),
+                    booking.getResource().getName(),
+                    reason
+            );
+        } catch (Exception e) { /* email failure must not fail the rejection */ }
+
         return saved;
     }
 
@@ -166,13 +256,31 @@ public class BookingService {
         
         booking.setStatus(BookingStatus.CANCELLED);
         Booking saved = bookingRepository.save(booking);
-        
-        notificationService.sendNotification(
-                booking.getUser(),
-                "Your booking has been cancelled.",
-                NotificationType.BOOKING_CANCELLED
-        );
+
+        try {
+            notificationService.sendNotification(
+                    booking.getUser(),
+                    "Your booking has been cancelled.",
+                    NotificationType.BOOKING_CANCELLED
+            );
+        } catch (Exception e) { /* notification failure must not fail the cancellation */ }
+
+        try {
+            emailService.sendBookingCancelledEmail(
+                    booking.getUser().getEmail(),
+                    booking.getUser().getName(),
+                    booking.getResource().getName(),
+                    fmt(booking.getStartTime()),
+                    fmt(booking.getEndTime())
+            );
+        } catch (Exception e) { /* email failure must not fail the cancellation */ }
+
         return saved;
+    }
+
+    /** Formats a LocalDateTime for display in emails (e.g. "Mon, Apr 09 at 10:00 AM"). */
+    private String fmt(java.time.LocalDateTime dt) {
+        return dt.format(DateTimeFormatter.ofPattern("EEE, MMM dd 'at' hh:mm a"));
     }
 
     /**

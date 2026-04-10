@@ -18,6 +18,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("SELECT b FROM Booking b " +
            "WHERE b.resource.id = :resourceId " +
            "AND b.status = 'APPROVED' " +
+           "AND b.deletedAt IS NULL " +
            "AND b.startTime < :endTime " +
            "AND b.endTime > :startTime")
     List<Booking> findConflictingBookings(

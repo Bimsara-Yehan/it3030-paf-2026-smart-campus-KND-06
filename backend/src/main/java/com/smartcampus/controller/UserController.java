@@ -1,14 +1,18 @@
 package com.smartcampus.controller;
 
+import com.smartcampus.dto.request.UpdateProfileRequest;
 import com.smartcampus.dto.response.ApiResponse;
 import com.smartcampus.dto.response.UserResponse;
+import com.smartcampus.entity.User;
 import com.smartcampus.enums.UserRole;
 import com.smartcampus.enums.TicketCategory;
 import com.smartcampus.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -127,6 +131,27 @@ public class UserController {
         log.debug("GET /users/me");
         UserResponse user = userService.getCurrentUserProfile();
         return ResponseEntity.ok(ApiResponse.success("Profile retrieved.", user));
+    }
+
+    // =========================================================================
+    // PATCH /users/profile
+    // =========================================================================
+
+    /**
+     * Updates the display name of the currently authenticated user.
+     *
+     * @param currentUser the authenticated user (injected by Spring Security)
+     * @param request     JSON body with {@code fullName}
+     * @return {@code 200 OK} with the updated {@link UserResponse}
+     */
+    @PatchMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody UpdateProfileRequest request) {
+
+        log.info("PATCH /users/profile — user: {}", currentUser.getId());
+        UserResponse updated = userService.updateProfile(currentUser.getId(), request.getFullName());
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully.", updated));
     }
 
     // =========================================================================

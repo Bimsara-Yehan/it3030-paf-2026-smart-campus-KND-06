@@ -96,7 +96,7 @@ export default function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   useEffect(() => {
     const combinedText = `${title || ''} ${description || ''}`;
     if (combinedText.length > 10) {
-      const pred = predictTicketDetails(combinedText);
+      const pred = predictTicketDetails(title || '', description || '');
       if (pred) {
         if (pred.category) setValue('category', pred.category);
         if (pred.priority) setValue('priority', pred.priority);
