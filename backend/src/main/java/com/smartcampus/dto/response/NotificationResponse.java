@@ -1,5 +1,6 @@
 package com.smartcampus.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.smartcampus.entity.Notification;
 import com.smartcampus.enums.NotificationType;
 import lombok.AllArgsConstructor;
@@ -52,7 +53,11 @@ public class NotificationResponse {
      * Whether the user has read this notification.
      * Derived from {@link Notification#isRead()} — {@code true} when
      * {@code readAt} is non-null.
+     *
+     * @JsonProperty forces Jackson to serialize this as "isRead" instead of "read"
+     * (Jackson strips the "is" prefix from boolean getters by default).
      */
+    @JsonProperty("isRead")
     private boolean isRead;
 
     /**

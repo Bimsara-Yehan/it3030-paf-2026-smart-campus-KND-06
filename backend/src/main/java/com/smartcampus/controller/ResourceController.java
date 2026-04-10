@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,12 +59,14 @@ public class ResourceController {
         return ResponseEntity.ok(ApiResponse.success("Resource fetched successfully", data));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<ResourceResponse>> createResource(@Valid @RequestBody CreateResourceRequest request) {
         ResourceResponse data = resourceService.createResource(request, SYSTEM_ADMIN_ID);
         return new ResponseEntity<>(ApiResponse.success("Resource created successfully", data), HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ResourceResponse>> updateResource(
             @PathVariable UUID id, 
@@ -72,12 +75,14 @@ public class ResourceController {
         return ResponseEntity.ok(ApiResponse.success("Resource updated successfully", data));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteResource(@PathVariable UUID id) {
         resourceService.deleteResource(id);
         return ResponseEntity.ok(ApiResponse.<Void>success("Resource archived successfully", null));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<ResourceResponse>> changeStatus(
             @PathVariable UUID id, 

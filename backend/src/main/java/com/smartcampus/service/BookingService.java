@@ -99,34 +99,42 @@ public class BookingService {
         }
 
         // Notify all admins so they know a new booking needs review
-        String adminMessage = user.getName() + " requested " + resource.getName()
-                + " from " + fmt(saved.getStartTime()) + " to " + fmt(saved.getEndTime()) + ".";
-        userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
-                .forEach(admin -> {
-                    notificationService.sendNotification(
-                            admin,
-                            adminMessage,
-                            NotificationType.SYSTEM_ANNOUNCEMENT,
-                            "BOOKING",
-                            saved.getId()
-                    );
-                    emailService.sendNewBookingRequestEmail(
-                            admin.getEmail(),
-                            admin.getName(),
-                            user.getName(),
-                            resource.getName(),
-                            fmt(saved.getStartTime()),
-                            fmt(saved.getEndTime())
-                    );
-                });
+        try {
+            String adminMessage = user.getName() + " requested " + resource.getName()
+                    + " from " + fmt(saved.getStartTime()) + " to " + fmt(saved.getEndTime()) + ".";
+            userRepository.findAllByRoleAndDeletedAtIsNull(UserRole.ADMIN)
+                    .forEach(admin -> {
+                        notificationService.sendNotification(
+                                admin,
+                                adminMessage,
+                                NotificationType.SYSTEM_ANNOUNCEMENT,
+                                "BOOKING",
+                                saved.getId()
+                        );
+                        emailService.sendNewBookingRequestEmail(
+                                admin.getEmail(),
+                                admin.getName(),
+                                user.getName(),
+                                resource.getName(),
+                                fmt(saved.getStartTime()),
+                                fmt(saved.getEndTime())
+                        );
+                    });
+        } catch (Exception e) {
+            // Admin notification/email failure must not roll back a successful booking
+        }
 
-        emailService.sendBookingConfirmationEmail(
-            user.getEmail(),
-            user.getName(),
-            resource.getName(),
-            fmt(saved.getStartTime()),
-            fmt(saved.getEndTime())
-        );
+        try {
+            emailService.sendBookingConfirmationEmail(
+                user.getEmail(),
+                user.getName(),
+                resource.getName(),
+                fmt(saved.getStartTime()),
+                fmt(saved.getEndTime())
+            );
+        } catch (Exception e) {
+            // Confirmation email failure must not roll back a successful booking
+        }
 
         return saved;
     }
@@ -174,8 +182,14 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.APPROVED);
         
+        Booking saved;
         try {
-            Booking saved = bookingRepository.save(booking);
+            saved = bookingRepository.save(booking);
+        } catch (OptimisticLockException e) {
+            throw new IllegalStateException("Booking was modified by another user.");
+        }
+
+        try {
             notificationService.sendNotification(
                 booking.getUser(),
                 "Your booking request for " + booking.getResource().getName() + " has been approved!",
@@ -183,7 +197,9 @@ public class BookingService {
                 "BOOKING",
                 booking.getId()
             );
+        } catch (Exception e) { /* notification failure must not fail the approval */ }
 
+        try {
             emailService.sendBookingApprovedEmail(
                 booking.getUser().getEmail(),
                 booking.getUser().getName(),
@@ -191,11 +207,9 @@ public class BookingService {
                 fmt(booking.getStartTime()),
                 fmt(booking.getEndTime())
             );
+        } catch (Exception e) { /* email failure must not fail the approval */ }
 
-            return saved;
-        } catch (OptimisticLockException e) {
-            throw new IllegalStateException("Booking was modified by another user.");
-        }
+        return saved;
     }
 
     /**
@@ -210,18 +224,22 @@ public class BookingService {
         
         Booking saved = bookingRepository.save(booking);
 
-        notificationService.sendNotification(
-                booking.getUser(),
-                "Your booking has been rejected.",
-                NotificationType.BOOKING_REJECTED
-        );
+        try {
+            notificationService.sendNotification(
+                    booking.getUser(),
+                    "Your booking has been rejected.",
+                    NotificationType.BOOKING_REJECTED
+            );
+        } catch (Exception e) { /* notification failure must not fail the rejection */ }
 
-        emailService.sendBookingRejectedEmail(
-                booking.getUser().getEmail(),
-                booking.getUser().getName(),
-                booking.getResource().getName(),
-                reason
-        );
+        try {
+            emailService.sendBookingRejectedEmail(
+                    booking.getUser().getEmail(),
+                    booking.getUser().getName(),
+                    booking.getResource().getName(),
+                    reason
+            );
+        } catch (Exception e) { /* email failure must not fail the rejection */ }
 
         return saved;
     }
@@ -238,20 +256,24 @@ public class BookingService {
         
         booking.setStatus(BookingStatus.CANCELLED);
         Booking saved = bookingRepository.save(booking);
-        
-        notificationService.sendNotification(
-                booking.getUser(),
-                "Your booking has been cancelled.",
-                NotificationType.BOOKING_CANCELLED
-        );
 
-        emailService.sendBookingCancelledEmail(
-                booking.getUser().getEmail(),
-                booking.getUser().getName(),
-                booking.getResource().getName(),
-                fmt(booking.getStartTime()),
-                fmt(booking.getEndTime())
-        );
+        try {
+            notificationService.sendNotification(
+                    booking.getUser(),
+                    "Your booking has been cancelled.",
+                    NotificationType.BOOKING_CANCELLED
+            );
+        } catch (Exception e) { /* notification failure must not fail the cancellation */ }
+
+        try {
+            emailService.sendBookingCancelledEmail(
+                    booking.getUser().getEmail(),
+                    booking.getUser().getName(),
+                    booking.getResource().getName(),
+                    fmt(booking.getStartTime()),
+                    fmt(booking.getEndTime())
+            );
+        } catch (Exception e) { /* email failure must not fail the cancellation */ }
 
         return saved;
     }
