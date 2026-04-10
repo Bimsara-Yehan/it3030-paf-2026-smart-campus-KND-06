@@ -17,7 +17,7 @@ export const ResourceFilter: React.FC<ResourceFilterProps> = ({ onFilterChange }
     return (
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 AI Smart Search & Standard Filters
@@ -34,7 +34,7 @@ export const ResourceFilter: React.FC<ResourceFilterProps> = ({ onFilterChange }
                     <input
                         type="text"
                         placeholder="e.g., 'I need a massive lecture hall in the North Wing for 200 students'"
-                        className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block pl-11 p-3.5 shadow-sm transition-all"
+                        className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-amber-500 focus:border-amber-500 block pl-11 p-3.5 shadow-sm transition-all"
                         value={naturalQuery}
                         onChange={(e) => setNaturalQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleApply()}
@@ -46,7 +46,7 @@ export const ResourceFilter: React.FC<ResourceFilterProps> = ({ onFilterChange }
                 <div>
                     <label className="block mb-2 text-xs font-medium text-gray-600 uppercase tracking-wider">Resource Type</label>
                     <select
-                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors shadow-sm"
+                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors shadow-sm"
                         value={type}
                         onChange={(e) => setType(e.target.value)}
                     >
@@ -61,7 +61,7 @@ export const ResourceFilter: React.FC<ResourceFilterProps> = ({ onFilterChange }
                     <label className="block mb-2 text-xs font-medium text-gray-600 uppercase tracking-wider">Min Capacity</label>
                     <input
                         type="number"
-                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors shadow-sm"
+                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors shadow-sm"
                         placeholder="e.g. 50"
                         value={capacity}
                         onChange={(e) => setCapacity(e.target.value)}
@@ -71,7 +71,7 @@ export const ResourceFilter: React.FC<ResourceFilterProps> = ({ onFilterChange }
                     <label className="block mb-2 text-xs font-medium text-gray-600 uppercase tracking-wider">Location Scope</label>
                     <input
                         type="text"
-                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors shadow-sm"
+                        className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors shadow-sm"
                         placeholder="e.g. North Wing"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
@@ -80,7 +80,7 @@ export const ResourceFilter: React.FC<ResourceFilterProps> = ({ onFilterChange }
                 <div className="flex items-end">
                     <button
                         onClick={handleApply}
-                        className="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-xl text-sm px-5 py-2.5 text-center transition-all shadow-md shadow-indigo-200"
+                        className="w-full text-white bg-amber-700 hover:bg-amber-800 focus:ring-4 focus:outline-none focus:ring-amber-300 font-medium rounded-xl text-sm px-5 py-2.5 text-center transition-all shadow-md shadow-amber-200"
                     >
                         Apply Filters
                     </button>

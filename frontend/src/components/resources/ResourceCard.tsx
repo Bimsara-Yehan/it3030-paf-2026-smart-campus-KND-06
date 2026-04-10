@@ -8,10 +8,10 @@ interface ResourceCardProps {
 
 export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
     return (
-        <div className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-indigo-400 transition-all duration-300 hover:shadow-xl flex flex-col">
+        <div className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-amber-400 transition-all duration-300 hover:shadow-xl flex flex-col">
             
             {/* Top Graphic Area */}
-            <div className="h-24 w-full bg-gradient-to-br from-indigo-50 to-blue-50 relative overflow-hidden group-hover:from-indigo-100 group-hover:to-blue-100 transition-all duration-500">
+            <div className="h-24 w-full bg-gradient-to-br from-amber-50 to-amber-100 relative overflow-hidden group-hover:from-amber-100 group-hover:to-amber-200 transition-all duration-500">
                 {/* Status Indicator */}
                 <div className="absolute top-4 right-4 z-10">
                     <ResourceBadge text={resource.status} type="status" />
@@ -26,7 +26,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
                     <ResourceBadge text={resource.type} type="type" />
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mt-2 mb-1 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mt-2 mb-1 group-hover:text-amber-700 transition-colors">
                     {resource.name}
                 </h3>
                 
@@ -54,7 +54,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
             </div>
             
             {/* Hover Glow Effect */}
-            <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/5 pointer-events-none transition-all duration-300"></div>
+            <div className="absolute inset-0 bg-amber-700/0 group-hover:bg-amber-700/5 pointer-events-none transition-all duration-300"></div>
         </div>
     );
 };
