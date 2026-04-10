@@ -33,3 +33,6 @@ logs/
 
 # Maven wrapper (keep mvnw itself, ignore wrapper jar)
 .mvn/wrapper/maven-wrapper.jar
+
+# Local dev config with real credentials - never commit
+backend/src/main/resources/application-dev.yml
