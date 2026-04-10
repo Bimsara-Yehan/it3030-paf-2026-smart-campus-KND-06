@@ -23,10 +23,7 @@ export default function Topbar() {
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <span className="text-base font-semibold text-gray-800 tracking-tight flex items-center gap-2">
-        <img src="/logo.png" alt="Oakridge Logo" className="h-10 w-auto" />
-      </span>
+    <header className="flex h-16 shrink-0 items-center justify-end border-b border-gray-100 bg-white px-6">
 
       {/* ── Right: actions cluster ── */}
       <div className="flex items-center gap-3">
@@ -46,7 +43,7 @@ export default function Topbar() {
         {/* Sign out button */}
         <button
           onClick={handleSignOut}
-          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          className="rounded-full border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
         >
           Sign out
         </button>

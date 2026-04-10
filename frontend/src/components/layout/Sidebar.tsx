@@ -135,7 +135,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
 
 const ROLE_BADGE: Record<string, { label: string; classes: string }> = {
   [UserRole.ADMIN]:      { label: 'Administrator', classes: 'bg-red-100 text-red-700' },
-  [UserRole.TECHNICIAN]: { label: 'Technician',    classes: 'bg-blue-100 text-blue-700' },
+  [UserRole.TECHNICIAN]: { label: 'Technician',    classes: 'bg-purple-100 text-purple-700' },
   [UserRole.USER]:       { label: 'Student / Staff', classes: 'bg-green-100 text-green-700' },
 };
 
@@ -164,12 +164,8 @@ export default function Sidebar() {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white">
       {/* ── Logo / title ── */}
-      <div className="flex h-16 shrink-0 items-center justify-center border-b border-gray-200 px-5 gap-2">
-        <img src="/logo.png" alt="Oakridge Logo" className="h-12 w-auto object-contain" />
-        <span className="text-sm font-semibold text-gray-900 leading-tight">
-          Oakridge<br />
-          <span className="text-xs font-normal text-gray-500">Hub</span>
-        </span>
+      <div className="flex h-16 shrink-0 flex-col items-center justify-center border-b border-gray-200 px-5">
+        <img src="/logo.png" alt="Oakridge Logo" className="h-10 w-auto object-contain" />
       </div>
 
       {/* ── Navigation links ── */}
@@ -185,8 +181,8 @@ export default function Sidebar() {
                     'flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors',
                     item.indent ? 'text-xs font-medium' : 'text-sm font-medium py-2.5',
                     isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800',
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'text-gray-500 hover:bg-slate-100 hover:text-gray-800',
                   ].join(' ')}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -195,7 +191,7 @@ export default function Sidebar() {
                     className={[
                       'shrink-0',
                       item.indent ? 'h-3.5 w-3.5' : 'h-4.5 w-4.5',
-                      isActive ? 'text-blue-600' : 'text-gray-400',
+                      isActive ? 'text-amber-600' : 'text-gray-400',
                     ].join(' ')}
                     fill="none"
                     viewBox="0 0 24 24"
@@ -218,7 +214,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => navigate('/profile')}
-          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-gray-100"
+          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-100"
           aria-label="View your profile"
         >
           {/* Avatar — profile picture or initials fallback */}
@@ -229,7 +225,7 @@ export default function Sidebar() {
               className="h-9 w-9 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-700 text-xs font-bold text-white">
               {initials}
             </div>
           )}

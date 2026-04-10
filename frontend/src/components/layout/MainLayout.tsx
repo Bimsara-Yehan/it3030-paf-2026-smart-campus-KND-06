@@ -17,6 +17,7 @@
  * Page content scrolls inside its own flex child, not the window.
  */
 
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
@@ -26,9 +27,15 @@ import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 export default function MainLayout() {
   // Monitor the JWT expiry and surface warning state for the floating card.
   const { showWarning, secondsRemaining, extendSession } = useSessionTimeout();
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   return (
     // Full-viewport flex container — prevents the whole page from scrolling.
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* ── Sidebar (fixed width, scrolls its own nav list if needed) ── */}
       <Sidebar />
 
@@ -38,7 +45,7 @@ export default function MainLayout() {
         <Topbar />
 
         {/* Page content area — scrolls independently of the sidebar */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
           <Outlet />
         </main>
       </div>

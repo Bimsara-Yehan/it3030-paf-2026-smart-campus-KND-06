@@ -76,6 +76,10 @@ export default function NotificationBell() {
       startPollingFallback();
     }
 
+    // When the user marks notifications as read on the notifications page,
+    // re-fetch immediately so the badge count drops without waiting for SSE/poll
+    window.addEventListener('notifications:read', fetchCount);
+
     return () => {
       eventSource?.close();
       if (eventSourceRef.current) {
@@ -83,6 +87,7 @@ export default function NotificationBell() {
         eventSourceRef.current = null;
       }
       if (pollFallback) clearInterval(pollFallback);
+      window.removeEventListener('notifications:read', fetchCount);
     };
   }, []);
 

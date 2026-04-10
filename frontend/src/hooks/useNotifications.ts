@@ -99,6 +99,7 @@ export function useNotifications(): UseNotificationsReturn {
     );
     try {
       await axiosClient.patch(`/notifications/${id}/read`);
+      window.dispatchEvent(new Event('notifications:read'));
     } catch {
       setNotifications(snapshot); // revert optimistic update
     }
@@ -113,6 +114,7 @@ export function useNotifications(): UseNotificationsReturn {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     try {
       await axiosClient.patch('/notifications/read-all');
+      window.dispatchEvent(new Event('notifications:read'));
     } catch {
       setNotifications(snapshot);
     }
