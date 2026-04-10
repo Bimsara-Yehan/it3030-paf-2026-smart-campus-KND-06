@@ -40,14 +40,14 @@ const ROLE_LABELS: Record<string, string> = {
 /** Tailwind colour classes for each role badge. */
 const ROLE_COLOURS: Record<string, string> = {
   ADMIN:      'bg-red-100 text-red-700',
-  TECHNICIAN: 'bg-blue-100 text-blue-700',
+  TECHNICIAN: 'bg-purple-100 text-purple-700',
   USER:       'bg-green-100 text-green-700',
 };
 
 /** Avatar background colour for each role. */
 const ROLE_AVATAR_BG: Record<string, string> = {
   ADMIN:      'bg-red-500',
-  TECHNICIAN: 'bg-blue-500',
+  TECHNICIAN: 'bg-purple-500',
   USER:       'bg-green-600',
 };
 
@@ -174,10 +174,10 @@ export default function DashboardPage() {
               label="Total Users"
               value={totalUsers}
               loading={loading}
-              colorRing="ring-blue-100"
-              iconBg="bg-blue-50"
-              iconText="text-blue-600"
-              countText="text-blue-700"
+              colorRing="ring-amber-100"
+              iconBg="bg-amber-50"
+              iconText="text-amber-600"
+              countText="text-amber-700"
               icon={
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -275,7 +275,7 @@ export default function DashboardPage() {
       )}
 
       <div className="glass rounded-3xl bg-white/40 p-8 shadow-sm ring-1 ring-white/50 border border-white/20 animate-in slide-in-from-bottom duration-700">
-        <p className="text-sm font-medium text-blue-600">Welcome back</p>
+        <p className="text-sm font-medium text-amber-700">Welcome back</p>
 
         <h2 className="mt-1 text-3xl font-bold text-gray-900">
           {user?.fullName ?? 'Campus User'}
@@ -301,7 +301,7 @@ export default function DashboardPage() {
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <button
             onClick={() => navigate('/notifications')}
-            className="rounded-xl border border-gray-200 p-5 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+            className="rounded-xl border border-gray-200 p-5 text-left transition-colors hover:border-amber-200 hover:bg-amber-50"
           >
             <p className="font-semibold text-gray-800">Notifications</p>
             <p className="mt-1 text-sm text-gray-500">View your campus alerts and messages.</p>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => navigate('/bookings')}
-            className="rounded-xl border border-gray-200 p-5 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+            className="rounded-xl border border-gray-200 p-5 text-left transition-colors hover:border-amber-200 hover:bg-amber-50"
           >
             <p className="font-semibold text-gray-800">Bookings</p>
             <p className="mt-1 text-sm text-gray-500">Manage your room and resource bookings.</p>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => navigate('/tickets')}
-            className="rounded-xl border border-gray-200 p-5 text-left transition-colors hover:border-blue-300 hover:bg-blue-50"
+            className="rounded-xl border border-gray-200 p-5 text-left transition-colors hover:border-amber-200 hover:bg-amber-50"
           >
             <p className="font-semibold text-gray-800">Tickets</p>
             <p className="mt-1 text-sm text-gray-500">Submit and track maintenance requests.</p>
@@ -352,7 +352,7 @@ function TrendTooltip({ active, payload, label }: {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
       <p className="font-semibold text-gray-700">{label}</p>
-      <p className="mt-0.5 text-blue-600">
+      <p className="mt-0.5 text-amber-700">
         {payload[0].value} new {payload[0].value === 1 ? 'user' : 'users'}
       </p>
     </div>
@@ -424,10 +424,10 @@ function AnalyticsOverview({ registrationTrend, roleDist }: AnalyticsOverviewPro
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke="#3B82F6"
+                stroke="#b45309"
                 strokeWidth={2.5}
-                dot={{ r: 4, fill: '#3B82F6', strokeWidth: 0 }}
-                activeDot={{ r: 6, fill: '#2563EB', strokeWidth: 0 }}
+                dot={{ r: 4, fill: '#b45309', strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: '#92400e', strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>

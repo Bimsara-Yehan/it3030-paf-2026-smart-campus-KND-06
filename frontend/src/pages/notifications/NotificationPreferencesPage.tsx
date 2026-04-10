@@ -156,8 +156,8 @@ function Toggle({ enabled, saving, onChange }: ToggleProps) {
       className={[
         'relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent',
         'transition-colors duration-200 ease-in-out',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-        enabled ? 'bg-blue-600' : 'bg-gray-200',
+        'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2',
+        enabled ? 'bg-amber-700' : 'bg-gray-200',
         saving ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
       ].join(' ')}
     >
@@ -216,7 +216,7 @@ function PreferenceRow({ type, enabled, saving, onToggle }: PrefRowProps) {
       {/* Saving spinner + toggle */}
       <div className="ml-4 flex shrink-0 items-center gap-2.5">
         {saving && (
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-700 border-t-transparent" />
         )}
         <Toggle enabled={enabled} saving={saving} onChange={() => onToggle(type)} />
       </div>
@@ -368,7 +368,7 @@ export default function NotificationPreferencesPage() {
       {/* ── Loading state ── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-700 border-t-transparent" />
         </div>
       )}
 

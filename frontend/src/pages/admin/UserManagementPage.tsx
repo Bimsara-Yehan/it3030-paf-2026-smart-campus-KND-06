@@ -24,7 +24,7 @@ import type { User } from '../../types';
 
 const ROLE_BADGE: Record<UserRole, { label: string; badge: string; avatar: string }> = {
   [UserRole.ADMIN]:      { label: 'Admin',         badge: 'bg-red-100 text-red-700',    avatar: 'bg-red-500' },
-  [UserRole.TECHNICIAN]: { label: 'Technician',    badge: 'bg-blue-100 text-blue-700',  avatar: 'bg-blue-500' },
+  [UserRole.TECHNICIAN]: { label: 'Technician',    badge: 'bg-purple-100 text-purple-700', avatar: 'bg-purple-500' },
   [UserRole.USER]:       { label: 'User', badge: 'bg-green-100 text-green-700', avatar: 'bg-green-600' },
 };
 
@@ -207,7 +207,7 @@ function UserRow({ user, isSelf, onRoleChange, onStatusToggle }: RowProps) {
             title={isSelf ? 'Cannot change your own role' : 'Change role'}
             className={[
               'rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700',
-              'transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100',
+              'transition-colors focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100',
               isSelf ? 'cursor-not-allowed opacity-40' : 'hover:border-gray-300 cursor-pointer',
             ].join(' ')}
           >
@@ -329,15 +329,15 @@ export default function UserManagementPage() {
               key={t.id}
               className={[
                 'flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg',
-                t.type === 'info' ? 'border-blue-200' : 'border-red-200',
+                t.type === 'info' ? 'border-amber-200' : 'border-red-200',
               ].join(' ')}
             >
               <span className={[
                 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-                t.type === 'info' ? 'bg-blue-100' : 'bg-red-100',
+                t.type === 'info' ? 'bg-amber-100' : 'bg-red-100',
               ].join(' ')}>
                 {t.type === 'info' ? (
-                  <svg className="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <svg className="h-3.5 w-3.5 text-amber-700" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                   </svg>
                 ) : (
@@ -395,7 +395,7 @@ export default function UserManagementPage() {
               className={[
                 'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
                 roleFilter === tab.key
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-amber-100 text-amber-700'
                   : 'bg-gray-200 text-gray-500',
               ].join(' ')}
             >
@@ -419,14 +419,14 @@ export default function UserManagementPage() {
           placeholder="Search by name or email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
         />
       </div>
 
       {/* ── Loading ── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-700 border-t-transparent" />
         </div>
       )}
 

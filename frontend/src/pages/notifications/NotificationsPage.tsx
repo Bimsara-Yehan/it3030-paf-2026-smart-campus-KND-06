@@ -105,7 +105,7 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: CardProps) {
         'flex items-start gap-4 rounded-xl border p-4 transition-colors',
         notification.isRead
           ? 'border-gray-200 bg-white'
-          : 'border-blue-200 bg-blue-50',
+          : 'border-amber-200 bg-amber-50',
       ].join(' ')}
     >
       {/* ── Type icon ── */}
@@ -155,7 +155,7 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: CardProps) {
           <button
             onClick={() => onMarkAsRead(notification.id)}
             title="Mark as read"
-            className="rounded-lg p-1.5 text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700"
+            className="rounded-lg p-1.5 text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-800"
           >
             {/* Envelope-open icon */}
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
@@ -211,7 +211,7 @@ export default function NotificationsPage() {
 
           {/* Unread count badge */}
           {unreadCount > 0 && (
-            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs font-bold text-white">
+            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-700 px-1.5 text-xs font-bold text-white">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -231,7 +231,7 @@ export default function NotificationsPage() {
       {/* ── Loading state ── */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-700 border-t-transparent" />
         </div>
       )}
 

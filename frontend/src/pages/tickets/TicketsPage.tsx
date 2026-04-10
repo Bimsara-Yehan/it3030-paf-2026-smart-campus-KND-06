@@ -108,16 +108,16 @@ export default function TicketsPage() {
   };
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
+    <div className="p-8 bg-slate-50">
       <div className="max-w-7xl mx-auto space-y-8">
       {/* ════════════════════════════════════════════════════════════════════
           INCIDENT TICKETING SUMMARY CARD (ADMIN/TECH ONLY)
       ════════════════════════════════════════════════════════════════════ */}
       {isElevated && (
-        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-md text-white animate-in slide-in-from-top duration-500">
+        <div className="rounded-2xl bg-gradient-to-br from-amber-700 to-amber-900 p-6 shadow-md text-white animate-in slide-in-from-top duration-500">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-sm font-medium text-blue-100">Incident Ticketing Summary</p>
+              <p className="text-sm font-medium text-amber-100">Incident Ticketing Summary</p>
               <h2 className="mt-2 text-3xl font-bold">Active Campus Issues</h2>
             </div>
             <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
@@ -129,13 +129,13 @@ export default function TicketsPage() {
           <div className="grid grid-cols-2 gap-8 md:flex md:items-center md:gap-12">
             <div className="flex flex-col">
               <span className="text-4xl font-bold">{isLoading ? '...' : openTicketsCount}</span>
-              <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
+              <span className="text-xs font-medium text-amber-100 flex items-center gap-2 mt-1">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400"></span> Open
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-4xl font-bold">{isLoading ? '...' : inProgressCount}</span>
-              <span className="text-xs font-medium text-blue-100 flex items-center gap-2 mt-1">
+              <span className="text-xs font-medium text-amber-100 flex items-center gap-2 mt-1">
                 <span className="h-2.5 w-2.5 rounded-full bg-yellow-400"></span> In Progress
               </span>
             </div>
@@ -196,7 +196,7 @@ export default function TicketsPage() {
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} />
                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} />
                   <Tooltip cursor={{fill: '#F9FAFB'}} content={<VolumeTooltip />} />
-                  <Bar dataKey="count" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="count" fill="#b45309" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -219,7 +219,7 @@ export default function TicketsPage() {
           {user?.role !== 'ADMIN' && (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transition-all focus:ring-4 focus:ring-blue-100 active:scale-95"
+              className="inline-flex items-center px-5 py-2.5 bg-amber-700 text-white font-medium rounded-xl shadow-sm hover:bg-amber-800 transition-all focus:ring-4 focus:ring-amber-100 active:scale-95"
             >
               <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -238,7 +238,7 @@ export default function TicketsPage() {
                 onClick={() => setFilterStatus(status)}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   filterStatus === status
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'bg-amber-700 text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -257,14 +257,14 @@ export default function TicketsPage() {
                 placeholder="Search by ID or title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all bg-gray-50/50"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm transition-all bg-gray-50/50"
               />
             </div>
             
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
+              className="px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-amber-500 transition-all cursor-pointer shadow-sm"
             >
               <option value="NEWEST">Latest First</option>
               <option value="PRIORITY">Highest Priority</option>
@@ -308,20 +308,20 @@ export default function TicketsPage() {
               <svg className="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Error loading tickets</h3>
-              <p className="text-gray-500">We could not fetch the ticketing data. Please try refreshing.</p>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">Error loading tickets</h3>
+              <p className="text-sm text-gray-500">We could not fetch the ticketing data. Please try refreshing.</p>
             </div>
           </div>
         ) : filteredTickets.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-12 text-center animate-in scale-in">
             <div className="max-w-md">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
+              <div className="w-24 h-24 bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
                 <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">All Clear!</h3>
-              <p className="text-gray-500 mb-8 leading-relaxed">There are no tickets matching this status. Everything on campus is running smoothly!</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">All Clear!</h3>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">There are no tickets matching this status. Everything on campus is running smoothly!</p>
               {filterStatus !== 'ALL' && (
                 <button
                   onClick={() => setFilterStatus('ALL')}
@@ -375,7 +375,7 @@ export default function TicketsPage() {
                       {new Date(ticket.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link to={`/tickets/${ticket.id}`} className="inline-flex items-center text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+                      <Link to={`/tickets/${ticket.id}`} className="inline-flex items-center text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors">
                         View <span className="sr-only">, {ticket.title}</span>
                         <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -429,7 +429,7 @@ function CategoryTooltip({ active, payload }: {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
       <p className="font-semibold text-gray-700">{entry.name}</p>
-      <p className="mt-0.5 text-blue-600">
+      <p className="mt-0.5 text-amber-700">
         {entry.value} {entry.value === 1 ? 'ticket' : 'tickets'}
       </p>
     </div>
@@ -448,7 +448,7 @@ function VolumeTooltip({ active, payload, label }: {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
       <p className="font-semibold text-gray-700">{label}</p>
-      <p className="mt-0.5 text-blue-600">
+      <p className="mt-0.5 text-amber-700">
         {payload[0].value} {payload[0].value === 1 ? 'ticket' : 'tickets'}
       </p>
     </div>

@@ -45,7 +45,7 @@ function getInitials(fullName: string): string {
 /** Role badge display config — mirrors the Sidebar role colours. */
 const ROLE_BADGE: Record<UserRole, { label: string; classes: string }> = {
   ADMIN:      { label: 'Administrator',   classes: 'bg-red-100 text-red-700' },
-  TECHNICIAN: { label: 'Technician',      classes: 'bg-blue-100 text-blue-700' },
+  TECHNICIAN: { label: 'Technician',      classes: 'bg-purple-100 text-purple-700' },
   USER:       { label: 'User', classes: 'bg-green-100 text-green-700' },
 };
 
@@ -110,7 +110,7 @@ function InputField({
           'mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none',
           readOnly
             ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-default'
-            : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
+            : 'border-gray-300 bg-white text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-100',
         ].join(' ')}
       />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                 className="h-20 w-20 rounded-full object-cover ring-2 ring-white shadow"
               />
             ) : (
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white shadow">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-amber-700 text-xl font-bold text-white shadow">
                 {initials}
               </div>
             )}
@@ -309,7 +309,7 @@ export default function ProfilePage() {
               type="button"
               disabled={profileSaving}
               onClick={handleSaveProfile}
-              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+              className="rounded-full bg-amber-700 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
             >
               {profileSaving ? 'Saving…' : 'Save Changes'}
             </button>
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                 type="button"
                 disabled={pwSaving}
                 onClick={handleChangePassword}
-                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                className="rounded-full bg-amber-700 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
               >
                 {pwSaving ? 'Changing…' : 'Change Password'}
               </button>

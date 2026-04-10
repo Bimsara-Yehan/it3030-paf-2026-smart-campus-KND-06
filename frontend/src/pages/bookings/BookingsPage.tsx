@@ -8,11 +8,8 @@ import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
 import CalendarBookingView from '../../components/bookings/CalendarBookingView';
 import ResourceSelector from '../../components/bookings/ResourceSelector';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-
 const BookingsPage: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,30 +72,19 @@ const BookingsPage: React.FC = () => {
     ? bookings 
     : bookings.filter(b => b.status === filter);
 
-  if (loading) return <div className="p-8 text-center text-blue-600">Loading bookings...</div>;
+  if (loading) return <div className="p-8 text-center text-amber-700">Loading bookings...</div>;
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-gray-900">
             {isAdmin ? 'Booking Approval Matrix' : 'My Resource Requests'}
           </h1>
-          <p className="mt-2 text-gray-500 font-medium">
+          <p className="mt-1 text-sm text-gray-500">
             {isAdmin ? 'Review and manage incoming resource requests.' : 'Track and manage your campus resource reservations.'}
           </p>
         </div>
-        {!isAdmin && (
-          <button
-            onClick={() => navigate('/bookings/create')}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all duration-300 active:scale-95"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create New Booking
-          </button>
-        )}
       </div>
 
       {error && (
@@ -111,9 +97,9 @@ const BookingsPage: React.FC = () => {
       <div className="flex items-center gap-2 bg-white/50 backdrop-blur-md p-1 rounded-xl border border-white/20 shadow-sm w-fit">
         <button
           onClick={() => setViewMode('list')}
-          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
             viewMode === 'list'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+              ? 'bg-amber-700 text-white shadow-md shadow-amber-200'
               : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
           }`}
         >
@@ -121,9 +107,9 @@ const BookingsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setViewMode('calendar')}
-          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
             viewMode === 'calendar'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+              ? 'bg-amber-700 text-white shadow-md shadow-amber-200'
               : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
           }`}
         >
@@ -156,9 +142,9 @@ const BookingsPage: React.FC = () => {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 whitespace-nowrap ${
               filter === s 
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                ? 'bg-amber-700 text-white shadow-md shadow-amber-200' 
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
           >
@@ -172,14 +158,14 @@ const BookingsPage: React.FC = () => {
           filteredBookings.map((booking) => (
             <div 
               key={booking.id} 
-              className="group bg-white rounded-3xl p-6 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-blue-100 transition-all duration-500 flex flex-col relative overflow-hidden"
+              className="group bg-white rounded-3xl p-6 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-amber-100 transition-all duration-500 flex flex-col relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                  <BookingStatusBadge status={booking.status} />
               </div>
 
               <div className="flex justify-between items-center mb-1">
-                <h3 className="text-xl font-bold text-gray-900 truncate">{booking.resource?.name}</h3>
+                <h3 className="text-base font-semibold text-gray-900 truncate">{booking.resource?.name}</h3>
                 <div className="group-hover:opacity-0 transition-opacity">
                    <BookingStatusBadge status={booking.status} />
                 </div>
@@ -187,7 +173,7 @@ const BookingsPage: React.FC = () => {
               
               <div className="mt-4 space-y-3 flex-grow">
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                      </svg>
@@ -248,8 +234,8 @@ const BookingsPage: React.FC = () => {
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
              </div>
-             <h3 className="text-lg font-bold text-gray-900">No booking records found</h3>
-             <p className="text-gray-500 max-w-xs">There are no resource requests matched to your current filter.</p>
+             <h3 className="text-base font-semibold text-gray-700">No booking records found</h3>
+             <p className="mt-1 text-sm text-gray-400">There are no resource requests matched to your current filter.</p>
           </div>
         )}
       </div>

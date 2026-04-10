@@ -35,7 +35,7 @@ const AdminBookingsPage: React.FC = () => {
     <div className="p-8 space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-700 to-amber-900">
             Booking Approval Matrix
           </h1>
           <p className="text-gray-500 mt-1">Review and manage incoming resource requests.</p>
@@ -49,7 +49,7 @@ const AdminBookingsPage: React.FC = () => {
               className={`
                 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
                 ${filter === s 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                  ? 'bg-amber-700 text-white shadow-md shadow-amber-200'
                   : 'text-gray-600 hover:bg-white/50'}
               `}
             >
@@ -66,10 +66,10 @@ const AdminBookingsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="relative group overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl border border-white/40 shadow-2xl shadow-blue-900/5 min-h-[400px]">
+      <div className="relative group overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl border border-white/40 shadow-2xl shadow-gray-900/5 min-h-[400px]">
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-10 h-10 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-amber-700/30 border-t-amber-700 rounded-full animate-spin" />
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
@@ -108,7 +108,7 @@ const AdminBookingsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">
                           {booking.user?.fullName?.[0] || 'U'}
                         </div>
                         <div>

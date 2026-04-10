@@ -51,7 +51,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-stone-50 px-4 overflow-hidden">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4 overflow-hidden">
       
       {/* ── Motion Overlay: Falling Leaves / Particles ── */}
       <style>{`
@@ -84,7 +84,7 @@ export default function LoginPage() {
         <div className="leaf"></div>
       </div>
 
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl relative z-10 border border-stone-100">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl relative z-10 border border-gray-100">
         {/* ── Header ── */}
         <div className="mb-8 text-center relative z-10">
           <img src="/logo.png" alt="Oakridge Logo" className="h-32 mx-auto mb-4 object-contain" />
@@ -114,7 +114,7 @@ export default function LoginPage() {
                 required: 'Email is required',
                 pattern: { value: /^\S+@\S+\.\S+$/, message: 'Enter a valid email address' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
             />
             {errors.email && (
               <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -127,7 +127,7 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
+              <Link to="/forgot-password" className="text-xs text-amber-700 hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -139,7 +139,7 @@ export default function LoginPage() {
                 required: 'Password is required',
                 minLength: { value: 6, message: 'Password must be at least 6 characters' },
               })}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
             />
             {errors.password && (
               <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
@@ -149,7 +149,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="w-full rounded-full bg-amber-700 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
           >
             {isSubmitting ? 'Signing in…' : 'Sign In'}
           </button>
@@ -196,7 +196,7 @@ export default function LoginPage() {
         {/* ── Register link ── */}
         <p className="mt-6 text-center text-sm text-gray-500">
           Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-blue-600 hover:underline">
+          <Link to="/register" className="font-medium text-amber-700 hover:underline">
             Create one
           </Link>
         </p>

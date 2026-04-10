@@ -16,10 +16,10 @@ export default function ResetPasswordPage() {
   // No token in URL — show a helpful error instead of a broken form
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg text-center space-y-4">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-lg border border-gray-100 text-center space-y-4">
           <p className="text-red-600 font-medium">Invalid or missing reset link.</p>
-          <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+          <Link to="/forgot-password" className="text-sm text-amber-700 hover:underline">
             Request a new one
           </Link>
         </div>
@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
             </div>
             <h2 className="text-lg font-semibold text-gray-900">Password updated!</h2>
             <p className="text-sm text-gray-500">Redirecting you to sign in…</p>
-            <Link to="/login" className="inline-block text-sm font-medium text-blue-600 hover:underline">
+            <Link to="/login" className="inline-block text-sm font-medium text-amber-700 hover:underline">
               Go to Sign In
             </Link>
           </div>
@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
                   autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                 />
               </div>
 
@@ -99,7 +99,7 @@ export default function ResetPasswordPage() {
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                 />
                 {confirmPassword && newPassword !== confirmPassword && (
                   <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>
@@ -109,14 +109,14 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                className="w-full rounded-full bg-amber-700 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
               >
                 {loading ? 'Resetting…' : 'Reset Password'}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-500">
-              <Link to="/login" className="font-medium text-blue-600 hover:underline">Back to Sign In</Link>
+              <Link to="/login" className="font-medium text-amber-700 hover:underline">Back to Sign In</Link>
             </p>
           </>
         )}

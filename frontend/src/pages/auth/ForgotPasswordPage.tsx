@@ -24,8 +24,8 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-lg border border-gray-100">
 
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Smart Campus Hub</h1>
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
               If <span className="font-medium text-gray-700">{email}</span> is registered,
               you'll receive a reset link shortly. The link expires in 15 minutes.
             </p>
-            <Link to="/login" className="inline-block mt-2 text-sm font-medium text-blue-600 hover:underline">
+            <Link to="/login" className="inline-block mt-2 text-sm font-medium text-amber-700 hover:underline">
               Back to Sign In
             </Link>
           </div>
@@ -69,14 +69,14 @@ export default function ForgotPasswordPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                className="w-full rounded-full bg-amber-700 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
               >
                 {loading ? 'Sending…' : 'Send Reset Link'}
               </button>
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
 
             <p className="mt-6 text-center text-sm text-gray-500">
               Remember your password?{' '}
-              <Link to="/login" className="font-medium text-blue-600 hover:underline">Sign in</Link>
+              <Link to="/login" className="font-medium text-amber-700 hover:underline">Sign in</Link>
             </p>
           </>
         )}
