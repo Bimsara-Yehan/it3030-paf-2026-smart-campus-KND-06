@@ -40,6 +40,7 @@ import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
+import LandingPage from '@/pages/public/LandingPage';
 
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
@@ -79,7 +80,7 @@ export default function App() {
             <Route path="/reset-password"   element={<ResetPasswordPage />} />
             <Route path="/forbidden"        element={<ForbiddenPage />} />
 
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<LandingPage />} />
 
             {/* ── Protected routes — wrapped in PrivateRoute + MainLayout ── */}
             <Route element={<PrivateRoute />}>
