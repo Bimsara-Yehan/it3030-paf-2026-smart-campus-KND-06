@@ -51,11 +51,44 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <div className="relative flex min-h-screen items-center justify-center bg-stone-50 px-4 overflow-hidden">
+      
+      {/* ── Motion Overlay: Falling Leaves / Particles ── */}
+      <style>{`
+        @keyframes float {
+          0%   { transform: translateY(-5vh) translateX(0px) rotate(0deg); opacity: 0; }
+          10%  { opacity: 0.8; }
+          90%  { opacity: 0.8; }
+          100% { transform: translateY(105vh) translateX(20px) rotate(360deg); opacity: 0; }
+        }
+        .leaf {
+          position: absolute;
+          top: -10%;
+          background: rgba(120, 80, 40, 0.15); /* Subtle oak brown shadow */
+          border-radius: 50% 0 50% 0; /* Leaf shape */
+          pointer-events: none;
+          animation: float linear infinite;
+        }
+        .leaf:nth-child(1) { left: 10%; width: 20px; height: 20px; animation-duration: 12s; animation-delay: 0s; }
+        .leaf:nth-child(2) { left: 30%; width: 30px; height: 30px; animation-duration: 15s; animation-delay: 3s; }
+        .leaf:nth-child(3) { left: 50%; width: 15px; height: 15px; animation-duration: 10s; animation-delay: 1s; }
+        .leaf:nth-child(4) { left: 70%; width: 25px; height: 25px; animation-duration: 14s; animation-delay: 5s; }
+        .leaf:nth-child(5) { left: 85%; width: 35px; height: 35px; animation-duration: 18s; animation-delay: 2s; }
+      `}</style>
+      
+      <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+        <div className="leaf"></div>
+      </div>
+
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl relative z-10 border border-stone-100">
         {/* ── Header ── */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Smart Campus Hub</h1>
+        <div className="mb-8 text-center relative z-10">
+          <img src="/logo.png" alt="Oakridge Logo" className="h-32 mx-auto mb-4 object-contain" />
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Oakridge Operations</h1>
           <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
 
