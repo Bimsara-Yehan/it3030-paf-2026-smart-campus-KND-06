@@ -157,14 +157,11 @@ export default function Sidebar() {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white">
       {/* ── Logo / title ── */}
-      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-gray-200 px-5">
-        {/* Simple square logo mark */}
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-          <span className="text-sm font-bold text-white">SC</span>
-        </div>
+      <div className="flex h-16 shrink-0 items-center justify-center border-b border-gray-200 px-5 gap-2">
+        <img src="/logo.png" alt="Oakridge Logo" className="h-12 w-auto object-contain" />
         <span className="text-sm font-semibold text-gray-900 leading-tight">
-          Smart Campus<br />
-          <span className="text-xs font-normal text-gray-500">Operations Hub</span>
+          Oakridge<br />
+          <span className="text-xs font-normal text-gray-500">Hub</span>
         </span>
       </div>
 

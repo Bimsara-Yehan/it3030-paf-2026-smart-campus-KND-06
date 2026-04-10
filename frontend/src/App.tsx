@@ -39,6 +39,7 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
+import LandingPage from '@/pages/public/LandingPage';
 
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
@@ -76,7 +77,7 @@ export default function App() {
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
             <Route path="/forbidden" element={<ForbiddenPage />} />
 
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<LandingPage />} />
 
             {/* ── Protected routes — wrapped in PrivateRoute + MainLayout ── */}
             <Route element={<PrivateRoute />}>
